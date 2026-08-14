@@ -1,6 +1,7 @@
 import { createClerkClient, verifyToken } from "@clerk/backend";
 import type { NextFunction, Request, Response } from "express";
 import { DEFAULT_ROLE, env, type Role } from "./env.js";
+import { prisma } from "./prisma.js";
 
 const clerk = createClerkClient({ secretKey: env.CLERK_SECRET_KEY });
 
@@ -18,7 +19,9 @@ function normalizeRole(value: unknown): Role {
 
 /** The authenticated user attached to the request by `requireAuth`. */
 export interface AuthUser {
+  /** Our DB User id (cuid) — used for FK relations (assignee, audit log). */
   id: string;
+  clerkId: string;
   role: Role;
 }
 
@@ -65,11 +68,26 @@ export async function requireAuth(
     }
 
     // Role is authoritative from Clerk public metadata, fetched server-side.
-    const user = await clerk.users.getUser(userId);
-    req.user = {
-      id: userId,
-      role: normalizeRole(user.publicMetadata?.role),
-    };
+    const clerkUser = await clerk.users.getUser(userId);
+    const role = normalizeRole(clerkUser.publicMetadata?.role);
+    const email =
+      clerkUser.primaryEmailAddress?.emailAddress ??
+      clerkUser.emailAddresses[0]?.emailAddress ??
+      `${userId}@no-email.local`;
+    const name =
+      [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+      email;
+
+    // Sync the Clerk identity into our User table so tasks/audit logs can
+    // reference a real row. Keyed by clerkId; role/name/email kept fresh.
+    const dbUser = await prisma.user.upsert({
+      where: { clerkId: userId },
+      update: { role, name, email },
+      create: { clerkId: userId, role, name, email },
+      select: { id: true },
+    });
+
+    req.user = { id: dbUser.id, clerkId: userId, role };
     next();
   } catch {
     res.status(401).json({ error: "Unauthorized" });

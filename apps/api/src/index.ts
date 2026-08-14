@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { requireAuth } from "./auth.js";
 import { env } from "./env.js";
+import { tasksRouter } from "./tasks.js";
 
 const app = express();
 
@@ -18,6 +19,9 @@ app.get("/health", (_req, res) => {
 app.get("/me", requireAuth, (req, res) => {
   res.json(req.user);
 });
+
+// Task loop: on-read generation + today's list + task detail + save.
+app.use("/tasks", tasksRouter);
 
 app.listen(env.PORT, () => {
   console.log(`api listening on http://localhost:${env.PORT}`);

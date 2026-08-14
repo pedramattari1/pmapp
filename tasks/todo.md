@@ -89,6 +89,36 @@ and seed of 13 assets + 29 PM templates from pm-seed.json. No UI.
 - Local .env uses Railway's DATABASE_PUBLIC_URL (public proxy). The deployed api
   on Railway should use the internal postgres.railway.internal URL.
 
+---
+
+# Phase 2 — Core PM Loop + On-Read Generation
+
+Goal (CLAUDE.md + user msg; NOT BUILD_PLAN's stale cron framing): on-read
+idempotent task generation, GET /tasks/today, GET/POST /tasks/:id, web /today +
+/tasks/[id]. No cron. No /internal/run-daily (Phase 3).
+
+## Tasks
+- [x] Schema: Task.dueDate @db.Date; unique (templateId,dueDate),
+      (taskId,label), (taskId,type); migration phase2_task_generation applied
+- [x] API: time.ts (LA-local today), generation.ts (idempotent), requireAuth
+      user-sync into User table, tasks.ts router (today/detail/save + AuditLog)
+- [x] Web: api client fns, /today grouped list, /tasks/[id] + task-detail client
+      component, shadcn input/textarea/label/badge + status-badge
+- [x] Verify: generation idempotent (created 2 then 0); save persists +
+      idempotent (ticks/readings/attachments no-dupe); repo gate clean
+- [ ] Browser E2E (user-driven, like Phase 0): sign in → /today → open task →
+      checklist/status/attachment → Save → reload persists
+
+## Review — Phase 2 (2026-08-14)
+- On-read generation is idempotent (unique templateId+dueDate + skipDuplicates);
+  proven: run1 created=2, run2 created=0. LA-local "today" (Aug 14 = Fri) → 2
+  daily tasks, no weekly/monthly (correct).
+- Save path proven at data layer against a Generator task: status/ticks/readings/
+  attachment persist; re-save does not duplicate (audits +1 per save by design).
+- Not committed yet. Note: today has daily-only tasks (no readings) — to see the
+  readings UI live, either test on the 1st (monthly) / a Monday (weekly), or ask
+  me to drop a temporary reading-bearing task dated today.
+
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
 - `db:seed` populated **13 assets + 29 templates (2 daily / 3 weekly / 24
