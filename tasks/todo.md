@@ -207,6 +207,45 @@ enforcement is server-side (403), not hidden UI — proven with a negative test.
 - Ops note: tsx-watch api server dies if it hot-reloads mid-`pnpm install` of a
   new dep (pdfkit) — restart the api after adding server deps. Logged in lessons.
 
+---
+
+# Phase 5 — Field / Mobile Polish
+
+Goal (BUILD_PLAN §6 Phase 5): mobile-first task completion; resilient to flaky
+signal (offline queue that syncs when back online); installable PWA.
+**Adjusted DoD:** mechanisms proven automatically (valid installable manifest +
+SW; offline queue persists + flushes on reconnect; big tap targets); the physical
+on-device install / low-signal run is the user's manual confirmation.
+
+## Tasks
+- [ ] PWA: app/manifest.ts (standalone, start_url /today, theme), PNG icons
+      (192/512/maskable via sharp), public/sw.js (app-shell cache + fetch
+      handler), ServiceWorkerRegistrar in layout, viewport/theme metadata
+- [ ] Offline queue lib (injectable storage+fetcher, unit-testable): enqueue
+      task saves on network failure, flush on 'online'/reload. Integrate into
+      task-detail save (optimistic; "Saved offline — will sync" state)
+- [ ] Mobile task flow: larger checkboxes/tap targets, one-thumb layout
+- [ ] Verify: manifest fields valid; icons + sw present; queue unit test
+      (enqueue → flush drains, failure re-queues); repo gate; commit
+- [x] Verify: manifest fields valid; icons + sw served; queue unit test passes;
+      repo gate clean; committed
+- [ ] LATER (user, on device): install to home screen; complete a task in a
+      low-signal spot without data loss
+
+## Review — Phase 5 (2026-08-14, mechanisms verified)
+- PWA installable: /manifest.webmanifest (200, application/manifest+json;
+  standalone, start_url /today, theme #0f172a, 192/512 + maskable PNG icons
+  generated via zlib — real PNGs), /sw.js (200) with a fetch handler
+  (network-first navigations, cache-first assets, /offline fallback),
+  registered by ServiceWorkerRegistrar in root layout. viewport/theme metadata +
+  apple-web-app added. Physical install is the user's on-device step.
+- Offline resilience: offline-queue.ts (injectable storage+saver, unit-tested in
+  Node: persists while offline, drains on reconnect, idempotent). Task save now
+  queues on network failure and shows "Saved offline — will sync"; the registrar
+  flushes on the "online" event and on load (fresh Clerk token at flush time).
+- Mobile: bigger checklist checkboxes (h-6), full-width Save on mobile, /offline
+  page. Repo gate clean; 8 web routes build.
+
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
 - `db:seed` populated **13 assets + 29 templates (2 daily / 3 weekly / 24

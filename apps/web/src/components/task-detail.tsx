@@ -17,6 +17,7 @@ import {
   type UserSummary,
   type WorkOrderDetail,
 } from "@/lib/api";
+import { enqueueSave } from "@/lib/offline-queue";
 
 interface TickState {
   done: boolean;
@@ -41,6 +42,7 @@ export function TaskDetailForm({
   const [task, setTask] = useState<TaskDetail>(initial);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [queued, setQueued] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Checklist: one row per template item, seeded from saved ticks (by label).
@@ -112,28 +114,38 @@ export function TaskDetailForm({
   async function onSave() {
     setSaving(true);
     setError(null);
+    setQueued(false);
+    const input: SaveTaskInput = {
+      status,
+      ticks: task.template.checklistItems.map((label) => ({
+        label,
+        done: ticks[label]?.done ?? false,
+        note: ticks[label]?.note || undefined,
+      })),
+      readings: task.template.requiredReadings.map((spec) => ({
+        type: spec.type,
+        value: readings[spec.type] ?? "",
+        unit: spec.unit,
+      })),
+      attachments: pendingAttachments,
+    };
     try {
-      const input: SaveTaskInput = {
-        status,
-        ticks: task.template.checklistItems.map((label) => ({
-          label,
-          done: ticks[label]?.done ?? false,
-          note: ticks[label]?.note || undefined,
-        })),
-        readings: task.template.requiredReadings.map((spec) => ({
-          type: spec.type,
-          value: readings[spec.type] ?? "",
-          unit: spec.unit,
-        })),
-        attachments: pendingAttachments,
-      };
       const token = await getToken();
       const updated = await saveTask(token, task.id, input);
       setTask(updated);
       setPendingAttachments([]);
       setSavedAt(new Date().toLocaleTimeString());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      // Offline or network failure → queue it and let it sync on reconnect.
+      const offline =
+        (typeof navigator !== "undefined" && !navigator.onLine) ||
+        err instanceof TypeError;
+      if (offline) {
+        enqueueSave(task.id, input);
+        setQueued(true);
+      } else {
+        setError(err instanceof Error ? err.message : "Save failed");
+      }
     } finally {
       setSaving(false);
     }
@@ -160,10 +172,10 @@ export function TaskDetailForm({
         <div className="space-y-3">
           {task.template.checklistItems.map((label) => (
             <div key={label} className="rounded-lg border p-3">
-              <label className="flex items-start gap-3">
+              <label className="flex items-start gap-3 py-1">
                 <input
                   type="checkbox"
-                  className="mt-1 h-4 w-4"
+                  className="mt-0.5 h-6 w-6 shrink-0"
                   checked={ticks[label]?.done ?? false}
                   onChange={(e) =>
                     setTicks((prev) => ({
@@ -344,12 +356,22 @@ export function TaskDetailForm({
         </div>
       </section>
 
-      <div className="flex items-center gap-4 border-t pt-4">
-        <Button onClick={onSave} disabled={saving}>
+      <div className="flex flex-wrap items-center gap-4 border-t pt-4">
+        <Button
+          onClick={onSave}
+          disabled={saving}
+          size="lg"
+          className="w-full sm:w-auto"
+        >
           {saving ? "Saving…" : "Save"}
         </Button>
-        {savedAt && !error && (
+        {savedAt && !error && !queued && (
           <span className="text-sm text-green-600">Saved at {savedAt}</span>
+        )}
+        {queued && (
+          <span className="text-sm text-amber-600">
+            Saved offline — will sync when back online
+          </span>
         )}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
