@@ -1,0 +1,484 @@
+{
+  "_note": "Seed source for The Fay PM app. Claude Code: import these in apps/api/prisma/seed.ts and map to PMTemplate rows. weekday: 0=Sun..6=Sat. dayOfMonth for MONTHLY. requiredReadings become Reading inputs on the task. Assets should be upserted from the distinct `asset` values below.",
+  "assets": [
+    { "name": "Fire Pump", "category": "Fire & Life Safety", "location": "Mechanical" },
+    { "name": "Fire Extinguishers", "category": "Fire & Life Safety", "location": "Building-wide" },
+    { "name": "Generator", "category": "Mechanical", "location": "Mechanical" },
+    { "name": "Hot Water / Tank Systems", "category": "Mechanical", "location": "Mechanical Penthouse" },
+    { "name": "Water Softener / Salt System", "category": "Mechanical", "location": "Mechanical" },
+    { "name": "AC Units", "category": "HVAC", "location": "Building-wide" },
+    { "name": "DOAS Units", "category": "HVAC", "location": "Roof" },
+    { "name": "Roof HVAC Equipment", "category": "HVAC", "location": "Roof" },
+    { "name": "Elevators", "category": "Elevators", "location": "Building-wide" },
+    { "name": "Pool Equipment", "category": "Recreation", "location": "Pool Room" },
+    { "name": "TPO Roof", "category": "Roof", "location": "Roof" },
+    { "name": "Swing Stage Equipment", "category": "Building Equipment", "location": "Roof" },
+    { "name": "Security Cameras", "category": "Security", "location": "Building-wide" }
+  ],
+  "templates": [
+    {
+      "title": "Daily Fire & Life Safety Check",
+      "category": "Fire & Life Safety",
+      "frequency": "DAILY",
+      "checklist": [
+        "Check FCC (Fire Control Center)",
+        "Verify fire alarm/control systems for active faults or abnormal conditions",
+        "Check DOAS panel / AC Smart (HVAC) systems for alarms, faults, or abnormal operation",
+        "Inspect pool room and mechanical areas",
+        "Inspect mechanical units and verify normal operation",
+        "Document and log all inspections and abnormalities"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Daily Building & Common Areas Walk",
+      "category": "Common Areas",
+      "frequency": "DAILY",
+      "checklist": [
+        "Inspect common areas for cleanliness, damage, or maintenance issues",
+        "Check doors for proper operation and damage",
+        "Check interior and exterior lighting",
+        "Look for leaks, water intrusion, vandalism, or other deficiencies",
+        "Record deficiencies requiring follow-up"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Weekly 23rd Floor / Amenity Areas",
+      "category": "Recreation",
+      "frequency": "WEEKLY",
+      "weekday": 1,
+      "checklist": [
+        "Pressure wash designated 23rd-floor areas",
+        "Inspect gym and fitness equipment for damage, loose components, or operational issues",
+        "Inspect gym bathrooms for defects, cleanliness, and maintenance issues",
+        "Check bathroom fixtures and plumbing for leaks",
+        "Check doors and lights",
+        "Inspect water bottle filling station / sink",
+        "Inspect planters and water plants as required",
+        "Check TVs and verify operation",
+        "Inspect kitchen area and lockers",
+        "Inspect bathrooms for cleanliness, damage, and defects"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Weekly Fire/Life Safety & Building Systems",
+      "category": "Fire & Life Safety",
+      "frequency": "WEEKLY",
+      "weekday": 1,
+      "checklist": [
+        "Check Firefighter Control Center (FCC)",
+        "Inspect HVAC systems and verify normal operation",
+        "Inspect AC Smart systems",
+        "Inspect pool room",
+        "Inspect mechanical units",
+        "Check for leaks and abnormal conditions",
+        "Log findings and create work orders for deficiencies"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Weekly Elevator / Building Equipment",
+      "category": "Elevators",
+      "frequency": "WEEKLY",
+      "weekday": 1,
+      "asset": "Elevators",
+      "checklist": [
+        "Inspect elevator control room",
+        "Verify elevator-related equipment is clean and accessible",
+        "Inspect swing-stage equipment and associated areas",
+        "Check for visible damage, corrosion, or unsafe conditions",
+        "Document deficiencies"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Fire Extinguisher Inspection",
+      "category": "Fire & Life Safety",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Fire Extinguishers",
+      "checklist": [
+        "Inspect all fire extinguishers",
+        "Verify proper location and accessibility",
+        "Check pressure gauges",
+        "Inspect seals, pins, hoses, and physical condition",
+        "Document deficiencies"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Fire/Smoke Damper (FSD) Check",
+      "category": "Fire & Life Safety",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Perform monthly FSD unit checks where applicable",
+        "Verify accessible dampers are in proper condition and clean",
+        "Document deficiencies or units requiring service"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Fire Pump Run Test",
+      "category": "Fire & Life Safety",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Fire Pump",
+      "checklist": [
+        "Perform scheduled fire pump run test",
+        "Verify pump operation and check for abnormal conditions",
+        "Record pressure / gauge readings",
+        "Log test results"
+      ],
+      "requiredReadings": [
+        { "type": "Suction pressure", "unit": "psi" },
+        { "type": "Discharge pressure", "unit": "psi" }
+      ]
+    },
+    {
+      "title": "Monthly Elevator Emergency Systems Test",
+      "category": "Elevators",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Elevators",
+      "checklist": [
+        "Test elevator recall function as scheduled",
+        "Inspect elevator emergency phone and verify operation/communication",
+        "Confirm emergency information is current"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly AC Unit Inspection",
+      "category": "HVAC",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "AC Units",
+      "checklist": [
+        "Perform monthly AC unit hatch inspections",
+        "Inspect units for leaks",
+        "Check filters and general condition",
+        "Check for abnormal noises or operating conditions",
+        "Check system error codes",
+        "Inspect coils and determine cleaning requirements; clean as required"
+      ],
+      "requiredReadings": [
+        { "type": "System error codes", "unit": "code" }
+      ]
+    },
+    {
+      "title": "Monthly Roof HVAC Equipment",
+      "category": "HVAC",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Roof HVAC Equipment",
+      "checklist": [
+        "Inspect rooftop HVAC equipment",
+        "Check for refrigerant / water / condensate leaks",
+        "Clean coils and surrounding areas as required",
+        "Check system errors and alarms",
+        "Inspect transom units and condensate systems; clean transom units",
+        "Verify proper airflow",
+        "Document operating conditions"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Mechanical Penthouse — Hot Water / Tank Systems",
+      "category": "Mechanical",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Hot Water / Tank Systems",
+      "checklist": [
+        "Record tank readings",
+        "Check all tanks for leaks",
+        "Check all gauge readings",
+        "Check water temperatures",
+        "Inspect circulation equipment",
+        "Inspect piping and valves for leaks",
+        "Verify equipment is operating normally",
+        "Clean and organize mechanical room; maintain clear access",
+        "Document readings and deficiencies"
+      ],
+      "requiredReadings": [
+        { "type": "Tank level", "unit": "reading" },
+        { "type": "Gauge pressure", "unit": "psi" },
+        { "type": "Water temperature", "unit": "°F" }
+      ]
+    },
+    {
+      "title": "Monthly TPO Roof Inspection",
+      "category": "Roof",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "TPO Roof",
+      "checklist": [
+        "Inspect and clean TPO roof areas",
+        "Remove debris from around equipment and drains",
+        "Check for visible damage or deficiencies",
+        "Verify roof areas remain clean and accessible"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly DOAS Unit Maintenance",
+      "category": "HVAC",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "DOAS Units",
+      "checklist": [
+        "Inspect and clean DOAS units",
+        "Change filters as scheduled",
+        "Inspect for leaks",
+        "Check electrical / mechanical components",
+        "Check for system error codes",
+        "Verify airflow before maintenance",
+        "Perform required maintenance / cleaning",
+        "Verify airflow after maintenance",
+        "Document before-and-after conditions"
+      ],
+      "requiredReadings": [
+        { "type": "Airflow before", "unit": "cfm" },
+        { "type": "Airflow after", "unit": "cfm" }
+      ]
+    },
+    {
+      "title": "Monthly Stairwell Cleaning & Inspection",
+      "category": "Common Areas",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Clean stairwells",
+        "Inspect walls, floors, doors, lighting, and handrails",
+        "Check for vandalism or damage",
+        "Paint / touch up handrails as needed",
+        "Check stairwell doors for proper operation",
+        "Verify lighting is operational"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Exterior Areas Inspection",
+      "category": "Exterior",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Check exterior lights",
+        "Inspect doors and hardware",
+        "Check for vandalism",
+        "Inspect common-area conditions",
+        "Identify areas requiring painting or touch-up",
+        "Check for water intrusion or leaks"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Trash Rooms / Compactor",
+      "category": "Common Areas",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Clean trash rooms and compactor",
+        "Clean and mop trash-room floors",
+        "Inspect walls, doors, drains, and surrounding areas",
+        "Check for leaks",
+        "Check for odors or sanitation issues",
+        "Inspect compactor operation",
+        "Document maintenance deficiencies"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Pool Area Inspection",
+      "category": "Recreation",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Pool Equipment",
+      "checklist": [
+        "Inspect pool area; read and log equipment",
+        "Check pool equipment and surrounding areas",
+        "Inspect pipes and pool filter tank for leaks",
+        "Check lighting",
+        "Look for leaks or water-related damage",
+        "Verify area is clean and safe"
+      ],
+      "requiredReadings": [
+        { "type": "Filter tank pressure", "unit": "psi" }
+      ]
+    },
+    {
+      "title": "Monthly Community Room Inspection",
+      "category": "Recreation",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Inspect community room",
+        "Check furniture and fixtures",
+        "Check lights and doors",
+        "Inspect kitchen and appliances",
+        "Check TVs and other equipment",
+        "Document damage or maintenance issues"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Gym Inspection",
+      "category": "Recreation",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Inspect all gym equipment and check machines for safe operation",
+        "Check for loose, damaged, or worn components",
+        "Inspect flooring and surrounding areas",
+        "Check bathrooms and sinks / water bottle stations",
+        "Inspect lockers",
+        "Verify TVs are operational",
+        "Check lighting and doors",
+        "Document deficiencies"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Security Camera Inspection",
+      "category": "Security",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Security Cameras",
+      "checklist": [
+        "View building security cameras",
+        "Verify cameras are online and operational",
+        "Check camera image quality",
+        "Identify cameras that are offline or malfunctioning",
+        "Document camera locations requiring service"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Key Audit",
+      "category": "Security",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Perform building key audit",
+        "Verify keys are accounted for",
+        "Confirm keys are properly labeled",
+        "Identify missing or unauthorized keys",
+        "Update key records as necessary"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Emergency Phone / Contact Info Check",
+      "category": "Fire & Life Safety",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Verify emergency phone systems",
+        "Confirm emergency contact information is current",
+        "Update information where required",
+        "Review building emergency plan"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Water Softener / Salt System",
+      "category": "Mechanical",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Water Softener / Salt System",
+      "checklist": [
+        "Check salt level and add salt as required",
+        "Inspect system for leaks",
+        "Check equipment operation",
+        "Document service performed"
+      ],
+      "requiredReadings": [
+        { "type": "Salt level", "unit": "%" }
+      ]
+    },
+    {
+      "title": "Monthly Generator Run Test & Inspection",
+      "category": "Mechanical",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Generator",
+      "checklist": [
+        "Perform generator run test; verify it starts and operates properly",
+        "Inspect fuel system",
+        "Check fluid levels and batteries",
+        "Check gauges and readings",
+        "Inspect for leaks",
+        "Check alarms / error conditions",
+        "Verify automatic transfer operation where applicable",
+        "Record run time and readings; log all results"
+      ],
+      "requiredReadings": [
+        { "type": "Run time", "unit": "min" },
+        { "type": "Fuel level", "unit": "%" },
+        { "type": "Battery voltage", "unit": "V" }
+      ]
+    },
+    {
+      "title": "Monthly Roof Inspection",
+      "category": "Roof",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Inspect entire accessible roof area",
+        "Check HVAC equipment and for leaks",
+        "Inspect drains and drainage areas; remove debris",
+        "Inspect TPO roofing; clean rooftop areas",
+        "Inspect equipment pads and penetrations",
+        "Check roof access doors / hatches",
+        "Inspect transom units and condensate systems",
+        "Document damage or areas requiring repair"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Elevator Control Room Inspection",
+      "category": "Elevators",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Elevators",
+      "checklist": [
+        "Inspect elevator control room; verify clean and accessible",
+        "Check for leaks",
+        "Inspect equipment for abnormal conditions",
+        "Check lighting",
+        "Verify doors and access are secure"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Firefighter Air Response Room (FAR)",
+      "category": "Fire & Life Safety",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "checklist": [
+        "Inspect FAR systems and call vendor to refill system",
+        "Check equipment and controls",
+        "Verify room is clean and accessible",
+        "Check lighting and doors",
+        "Document alarms, faults, or deficiencies"
+      ],
+      "requiredReadings": []
+    },
+    {
+      "title": "Monthly Swing Stage Equipment Inspection",
+      "category": "Building Equipment",
+      "frequency": "MONTHLY",
+      "dayOfMonth": 1,
+      "asset": "Swing Stage Equipment",
+      "checklist": [
+        "Inspect swing-stage equipment and associated areas",
+        "Check visible cables, equipment, connections, and mounting areas",
+        "Look for corrosion, damage, or unsafe conditions",
+        "Document deficiencies and report items requiring specialized inspection/service"
+      ],
+      "requiredReadings": []
+    }
+  ]
+}

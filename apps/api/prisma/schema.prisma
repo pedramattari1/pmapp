@@ -1,0 +1,16 @@
+// Phase 0 placeholder schema.
+// The real PM data model (assets, PM schedules, task instances, etc.) lands in
+// Phase 1 once BUILD_PLAN.md's data model is in hand. Do not add models here yet.
+// This file exists so `prisma validate` succeeds and the api is wired to
+// DATABASE_URL from day one. `prisma generate` intentionally is NOT part of the
+// build yet — there are no models to generate a client from until Phase 1, at
+// which point the build script re-adds `prisma generate`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
