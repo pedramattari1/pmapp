@@ -114,3 +114,96 @@ export function saveTask(
     body: JSON.stringify(input),
   });
 }
+
+// ---- Work orders + users (Phase 3) ----
+
+export type WorkOrderStatus = "OPEN" | "PARTS" | "VENDOR" | "FOLLOW_UP" | "CLOSED";
+
+export interface UserSummary {
+  id: string;
+  name: string;
+  email: string;
+  role: Me["role"];
+}
+
+export interface WorkOrderListItem {
+  id: string;
+  title: string;
+  status: WorkOrderStatus;
+  dueDate: string | null;
+  task: { id: string; template: { title: string } } | null;
+  assignee: { id: string; name: string } | null;
+}
+
+export interface WorkOrderDetail {
+  id: string;
+  title: string;
+  description: string;
+  status: WorkOrderStatus;
+  dueDate: string | null;
+  task: { id: string; template: { title: string } } | null;
+  assignee: { id: string; name: string; email: string } | null;
+  attachments: { id: string; url: string; caption: string | null }[];
+}
+
+export interface CreateWorkOrderInput {
+  title: string;
+  description: string;
+  taskId?: string;
+  assigneeId?: string;
+  dueDate?: string;
+}
+
+export interface UpdateWorkOrderInput {
+  title?: string;
+  description?: string;
+  status?: WorkOrderStatus;
+  assigneeId?: string | null;
+  dueDate?: string | null;
+  attachments?: { url: string; caption?: string }[];
+}
+
+export async function listWorkOrders(
+  token: string | null,
+  status?: WorkOrderStatus,
+): Promise<WorkOrderListItem[]> {
+  const q = status ? `?status=${status}` : "";
+  const { items } = await apiFetch<{ items: WorkOrderListItem[] }>(
+    `/work-orders${q}`,
+    token,
+  );
+  return items;
+}
+
+export function getWorkOrder(
+  token: string | null,
+  id: string,
+): Promise<WorkOrderDetail> {
+  return apiFetch<WorkOrderDetail>(`/work-orders/${id}`, token);
+}
+
+export function createWorkOrder(
+  token: string | null,
+  input: CreateWorkOrderInput,
+): Promise<WorkOrderDetail> {
+  return apiFetch<WorkOrderDetail>("/work-orders", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateWorkOrder(
+  token: string | null,
+  id: string,
+  input: UpdateWorkOrderInput,
+): Promise<WorkOrderDetail> {
+  return apiFetch<WorkOrderDetail>(`/work-orders/${id}`, token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listUsers(token: string | null): Promise<UserSummary[]> {
+  const { users } = await apiFetch<{ users: UserSummary[] }>("/users", token);
+  return users;
+}

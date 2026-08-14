@@ -17,6 +17,8 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   INTERNAL_RUN_SECRET: process.env.INTERNAL_RUN_SECRET,
+  // From address for Resend. Defaults to Resend's onboarding sender for testing.
+  MAIL_FROM: process.env.MAIL_FROM ?? "The Fay PM <onboarding@resend.dev>",
 } as const;
 
 export type Role = "ADMIN" | "MANAGER" | "ENGINEER" | "TECH" | "VIEWER";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
+import Link from "next/link";
 import { useState } from "react";
 import { StatusBadge, STATUS_OPTIONS } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  createWorkOrder,
   saveTask,
   type SaveTaskInput,
   type TaskDetail,
   type TaskStatus,
+  type UserSummary,
+  type WorkOrderDetail,
 } from "@/lib/api";
 
 interface TickState {
@@ -19,7 +23,20 @@ interface TickState {
   note: string;
 }
 
-export function TaskDetailForm({ initial }: { initial: TaskDetail }) {
+const DEFICIENCY_STATUSES: TaskStatus[] = [
+  "NEEDS_REPAIR",
+  "PARTS",
+  "VENDOR",
+  "FOLLOW_UP",
+];
+
+export function TaskDetailForm({
+  initial,
+  users,
+}: {
+  initial: TaskDetail;
+  users: UserSummary[];
+}) {
   const { getToken } = useAuth();
   const [task, setTask] = useState<TaskDetail>(initial);
   const [saving, setSaving] = useState(false);
@@ -48,6 +65,14 @@ export function TaskDetailForm({ initial }: { initial: TaskDetail }) {
   });
 
   const [status, setStatus] = useState<TaskStatus>(task.status);
+
+  // Create-work-order prompt (shown when a deficiency status is selected).
+  const [woTitle, setWoTitle] = useState(`${task.template.title} — deficiency`);
+  const [woDesc, setWoDesc] = useState("");
+  const [woAssignee, setWoAssignee] = useState("");
+  const [creatingWo, setCreatingWo] = useState(false);
+  const [createdWo, setCreatedWo] = useState<WorkOrderDetail | null>(null);
+
   const [newUrl, setNewUrl] = useState("");
   const [newCaption, setNewCaption] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<
@@ -63,6 +88,25 @@ export function TaskDetailForm({ initial }: { initial: TaskDetail }) {
     ]);
     setNewUrl("");
     setNewCaption("");
+  }
+
+  async function onCreateWorkOrder() {
+    setCreatingWo(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      const wo = await createWorkOrder(token, {
+        title: woTitle.trim() || task.template.title,
+        description: woDesc.trim(),
+        taskId: task.id,
+        assigneeId: woAssignee || undefined,
+      });
+      setCreatedWo(wo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create work order");
+    } finally {
+      setCreatingWo(false);
+    }
   }
 
   async function onSave() {
@@ -194,6 +238,64 @@ export function TaskDetailForm({ initial }: { initial: TaskDetail }) {
           ))}
         </select>
       </section>
+
+      {/* Deficiency → create linked work order */}
+      {DEFICIENCY_STATUSES.includes(status) && (
+        <section className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+            This task is flagged — create a work order
+          </h2>
+          {createdWo ? (
+            <p className="text-sm">
+              Work order created:{" "}
+              <Link href={`/work-orders/${createdWo.id}`} className="text-primary underline">
+                {createdWo.title}
+              </Link>
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <div className="grid gap-1">
+                <Label>Title</Label>
+                <Input value={woTitle} onChange={(e) => setWoTitle(e.target.value)} />
+              </div>
+              <div className="grid gap-1">
+                <Label>Description</Label>
+                <Textarea
+                  placeholder="What needs fixing?"
+                  value={woDesc}
+                  onChange={(e) => setWoDesc(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label>Assign to (optional)</Label>
+                <select
+                  className="h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={woAssignee}
+                  onChange={(e) => setWoAssignee(e.target.value)}
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCreateWorkOrder}
+                disabled={creatingWo}
+              >
+                {creatingWo ? "Creating…" : "Create work order"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Tip: also click Save below to persist the flagged status on this task.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Attachments */}
       <section className="space-y-3">

@@ -1,12 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TaskDetailForm } from "@/components/task-detail";
-import { getTask, listUsers } from "@/lib/api";
+import { WorkOrderDetailForm } from "@/components/work-order-detail";
+import { getWorkOrder, listUsers } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-export default async function TaskPage({
+export default async function WorkOrderPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -15,9 +15,9 @@ export default async function TaskPage({
   const { getToken } = await auth();
   const token = await getToken();
 
-  let task;
+  let wo;
   try {
-    task = await getTask(token, id);
+    wo = await getWorkOrder(token, id);
   } catch {
     notFound();
   }
@@ -25,10 +25,13 @@ export default async function TaskPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/today" className="text-sm text-muted-foreground hover:underline">
-        ← Back to Today
+      <Link
+        href="/work-orders"
+        className="text-sm text-muted-foreground hover:underline"
+      >
+        ← Back to Work Orders
       </Link>
-      <TaskDetailForm initial={task} users={users} />
+      <WorkOrderDetailForm initial={wo} users={users} />
     </div>
   );
 }

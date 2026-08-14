@@ -119,6 +119,50 @@ idempotent task generation, GET /tasks/today, GET/POST /tasks/:id, web /today +
   readings UI live, either test on the 1st (monthly) / a Monday (weekly), or ask
   me to drop a temporary reading-bearing task dated today.
 
+---
+
+# Phase 3 — Work Orders + Notifications
+
+Goal (BUILD_PLAN §6 Phase 3, reconciled to monorepo/on-read): deficiencies
+become tracked work orders; notifications on assignment + overdue digest.
+**Adjusted DoD (user):** work orders complete end to end; notification code in
+place and cleanly **no-ops + logs when RESEND_API_KEY absent**; digest endpoint
+testable via a local INTERNAL_RUN_SECRET. Live email delivery verified later.
+
+## Tasks
+- [x] Local INTERNAL_RUN_SECRET set in apps/api/.env (dev value)
+- [ ] API — `email.ts` (Resend, no-op+log without key), `workorders.ts`
+      (POST create, GET list?status, GET :id, POST :id update/status/assign/
+      attach), `GET /users` for assignee picker, `digest.ts` +
+      `POST /internal/run-daily` (secret-checked, not Clerk auth), AuditLog on
+      every mutation, assignment email on assignee set/change
+- [ ] Web — `/work-orders` list+filter, `/work-orders/[id]` detail (status incl
+      CLOSED, reassign, due, attachments), task-detail "Create work order"
+      prompt when status is a deficiency, nav link, api client fns
+- [ ] Verify — WO create/flag-from-task/close/reassign; email path logs "skipped"
+      w/o key; `POST /internal/run-daily` returns digest summary w/ correct
+      counts (401 without secret); repo gate clean; commit locally
+- [ ] LATER (needs key): confirm live assignment email + digest email delivery
+
+## Notes
+- No schema change: WorkOrder + Attachment.workOrderId already exist (Phase 1).
+- Digest replaces the plan's "cron run" — triggered by POST /internal/run-daily.
+- Deficiency statuses that prompt a WO: NEEDS_REPAIR | PARTS | VENDOR | FOLLOW_UP.
+
+## Review — Phase 3 (2026-08-14, adjusted DoD met)
+- Work orders end to end: create (optionally task-linked), list + status filter,
+  detail with status transitions incl CLOSED, reassign, due date, attachments.
+  Task detail prompts a linked WO when a deficiency status is selected.
+- Notifications: email.ts sends via Resend, but **no-ops + logs when
+  RESEND_API_KEY absent** (verified: assignment + digest both returned
+  skipped:true and logged "would send…"). isEmailEnabled()=false confirmed.
+- Digest: POST /internal/run-daily secret-checked (401 no/wrong secret, 200 with
+  INTERNAL_RUN_SECRET) → correct counts (overdue 1, open WO 1 → 0 after close).
+- Every mutation writes an AuditLog (verified 2 for a WO create+update).
+- Repo gate clean (typecheck/lint/build); 4 web routes build.
+- LATER (needs key): confirm live assignment + digest email delivery once the
+  user adds RESEND_API_KEY.
+
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
 - `db:seed` populated **13 assets + 29 templates (2 daily / 3 weekly / 24
