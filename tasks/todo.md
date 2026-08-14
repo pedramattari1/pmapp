@@ -28,8 +28,10 @@ No PM features. Everything wired to env vars; verified with real keys later.
 
 ## Review
 
-**Status: Phase 0 code-complete and locally verified.** Awaiting real Clerk +
-Railway creds for the together-verification (sign in → /today → api /me).
+**Status: Phase 0 DONE — live-verified 2026-08-14.** Signed in via Clerk, landed
+on /today showing name (Pedram Attari) + role ADMIN, and GET /me round-trip
+returned {id, role:"ADMIN"} through the Clerk-verified middleware. Definition of
+Done met.
 
 What was built:
 - pnpm-workspace monorepo (`apps/web`, `apps/api`), shared strict TS base config.
