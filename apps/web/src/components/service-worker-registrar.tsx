@@ -7,9 +7,15 @@ import { flushQueue } from "@/lib/offline-queue";
 export function ServiceWorkerRegistrar() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // Registration failures are non-fatal (e.g. unsupported browser).
-      });
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          // Pull any newer worker (e.g. the auth-safe fix) immediately.
+          void reg.update();
+        })
+        .catch(() => {
+          // Registration failures are non-fatal (e.g. unsupported browser).
+        });
     }
     // Try to drain any queued saves now and whenever we come back online.
     void flushQueue();
