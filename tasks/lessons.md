@@ -24,4 +24,20 @@ Patterns learned from corrections, so the same mistake isn't repeated.
   --script > migrations/<ts>_<name>/migration.sql`, then `prisma migrate deploy`.
   Prevention: don't rely on `migrate dev` in automation; use diff+deploy.
 
+## tsx watch dies mid-install
+- Adding a server dependency (e.g. pdfkit) while `pnpm dev:api` (tsx watch) is
+  running: tsx hot-reloads on the source edit BEFORE install finishes, hits
+  ERR_MODULE_NOT_FOUND, and the watcher **exits** (doesn't retry). Then the API is
+  down and HTTP tests get ECONNREFUSED. Prevention: after adding a server dep,
+  restart the api dev server; don't assume tsx watch recovered.
+
+## Proving server-side RBAC (negative test)
+- To prove role enforcement is server-side (not hidden UI), mint REAL low-priv
+  Clerk tokens: clerkClient.users.createUser({publicMetadata:{role}}), then
+  Backend API POST /v1/sessions {user_id} → POST /v1/sessions/{id}/tokens → jwt;
+  verifyToken accepts it. Hit the protected endpoint over HTTP and assert 403 for
+  VIEWER/TECH and 200 for ADMIN (positive control matters). Always clean up the
+  test users (delete Clerk users + synced DB rows) — and if the run aborts early,
+  sweep leftovers by email query (rbac-*@example.com).
+
 <!-- Append new lessons below as: pattern → preventing rule -->

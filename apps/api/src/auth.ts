@@ -93,3 +93,23 @@ export async function requireAuth(
     res.status(401).json({ error: "Unauthorized" });
   }
 }
+
+/**
+ * Role gate. Compose AFTER requireAuth: it reads the server-derived role
+ * (`req.user.role`, sourced from Clerk public metadata) and rejects with 403 if
+ * it isn't in the allowed set. This is the real enforcement — the UI hiding a
+ * button is not. 401 if somehow unauthenticated.
+ */
+export function requireRole(...allowed: Role[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!allowed.includes(req.user.role)) {
+      res.status(403).json({ error: "Forbidden", requiredRole: allowed });
+      return;
+    }
+    next();
+  };
+}

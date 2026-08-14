@@ -1,11 +1,16 @@
+import { currentUser } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await currentUser();
+  const role = user?.publicMetadata?.role;
+  const isManager = role === "ADMIN" || role === "MANAGER";
+
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between border-b px-6 py-3">
@@ -18,6 +23,16 @@ export default function AppLayout({
             <Link href="/work-orders" className="hover:text-foreground">
               Work Orders
             </Link>
+            {isManager && (
+              <>
+                <Link href="/dashboard" className="hover:text-foreground">
+                  Dashboard
+                </Link>
+                <Link href="/admin" className="hover:text-foreground">
+                  Admin
+                </Link>
+              </>
+            )}
           </nav>
         </div>
         <UserButton />

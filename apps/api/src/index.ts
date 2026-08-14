@@ -1,8 +1,10 @@
 import cors from "cors";
 import express from "express";
+import { adminRouter } from "./admin.js";
 import { requireAuth } from "./auth.js";
 import { runDailyDigest } from "./digest.js";
 import { env } from "./env.js";
+import { exportRouter } from "./export.js";
 import { prisma } from "./prisma.js";
 import { tasksRouter } from "./tasks.js";
 import { workOrdersRouter } from "./workorders.js";
@@ -37,6 +39,12 @@ app.use("/tasks", tasksRouter);
 
 // Work orders: deficiency tracking + assignment notifications.
 app.use("/work-orders", workOrdersRouter);
+
+// Admin surface: templates, user-role changes, dashboard (role-gated inside).
+app.use("/admin", adminRouter);
+
+// Audit export (CSV/PDF) — manager-only (gate applied inside the router).
+app.use("/export", exportRouter);
 
 // Daily digest trigger. Secret-protected (NOT Clerk auth) — there is no cron;
 // an external pinger/scheduler calls this. Verified via INTERNAL_RUN_SECRET.

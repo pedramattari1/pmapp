@@ -163,6 +163,50 @@ testable via a local INTERNAL_RUN_SECRET. Live email delivery verified later.
 - LATER (needs key): confirm live assignment + digest email delivery once the
   user adds RESEND_API_KEY.
 
+---
+
+# Phase 4 — Dashboard, Roles, Export
+
+Goal (BUILD_PLAN §6 Phase 4): manager visibility + **server-side** role
+enforcement + audit export. Roles: ADMIN/MANAGER see everything & edit templates
+& change roles; ENGINEER/TECH complete their tasks; VIEWER read-only. DoD demands
+enforcement is server-side (403), not hidden UI — proven with a negative test.
+
+## Tasks
+- [ ] API RBAC: `requireRole(...roles)` middleware (401 unauth, 403 wrong role),
+      composed after requireAuth. Manager-only (ADMIN|MANAGER): GET /templates,
+      POST /templates/:id (edit), GET /dashboard, GET /export/*. ADMIN-only:
+      POST /users/:id/role (updates Clerk publicMetadata + DB).
+- [ ] Export: CSV (built by hand) + PDF (pdfkit) of tasks + work orders over a
+      date range; correct Content-Type + filename.
+- [ ] NEGATIVE TEST (real Clerk tokens): VIEWER & TECH tokens hitting template
+      edit / role change / export must return **403**; ADMIN gets 200. Feasibility
+      probed OK — can mint low-priv session tokens + verifyToken accepts them.
+- [ ] Web: /dashboard (completion rate, overdue, open WOs by status, recent
+      activity), /admin (template edit + user role change), export buttons,
+      role-gated nav (UI hint only — real gate is server-side).
+- [ ] Verify: negative+positive RBAC pass; export files valid; repo gate; commit.
+
+## Notes
+- Role source of truth stays Clerk publicMetadata; role change writes there + DB.
+- Dashboard gated to ADMIN|MANAGER (manager overview); others use /today.
+
+## Review — Phase 4 (2026-08-14, DoD met)
+- **Server-side RBAC proven with a real negative test** (minted Clerk tokens,
+  real HTTP): VIEWER & TECH → 403 on template edit, role change, export;
+  MANAGER → 403 on role change (admin-only); ADMIN → 200 on all; MANAGER → 200
+  on template edit + export. Enforcement is `requireRole` middleware on
+  req.user.role (from Clerk metadata), before handler logic — not hidden UI.
+- Export verified: tasks.csv / work-orders.csv (correct headers + Content-Type +
+  attachment filename), tasks.pdf (valid %PDF- magic, application/pdf).
+- Dashboard returns completion rate / overdue / open WOs by status / recent
+  activity. /admin edits templates + changes user roles (writes Clerk + DB).
+- Nav links to Dashboard/Admin shown only to ADMIN|MANAGER (UI hint); the real
+  gate is server-side (pages catch 403 → "Managers only").
+- Repo gate clean; 6 web routes build.
+- Ops note: tsx-watch api server dies if it hot-reloads mid-`pnpm install` of a
+  new dep (pdfkit) — restart the api after adding server deps. Logged in lessons.
+
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
 - `db:seed` populated **13 assets + 29 templates (2 daily / 3 weekly / 24

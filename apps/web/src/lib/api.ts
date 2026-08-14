@@ -207,3 +207,91 @@ export async function listUsers(token: string | null): Promise<UserSummary[]> {
   const { users } = await apiFetch<{ users: UserSummary[] }>("/users", token);
   return users;
 }
+
+// ---- Dashboard / admin / export (Phase 4) ----
+
+export interface DashboardData {
+  date: string;
+  today: { total: number; completed: number; completionRate: number };
+  overdueCount: number;
+  openWorkOrdersByStatus: { status: WorkOrderStatus; count: number }[];
+  recentActivity: {
+    entity: string;
+    entityId: string;
+    action: string;
+    at: string;
+    user: string;
+  }[];
+}
+
+export interface TemplateAdmin {
+  id: string;
+  title: string;
+  category: string;
+  frequency: Frequency;
+  weekday: number | null;
+  dayOfMonth: number | null;
+  active: boolean;
+  checklistItems: string[];
+  requiredReadings: ReadingSpec[];
+  asset: { id: string; name: string } | null;
+}
+
+export interface UpdateTemplateInput {
+  title?: string;
+  category?: string;
+  frequency?: Frequency;
+  checklistItems?: string[];
+  weekday?: number | null;
+  dayOfMonth?: number | null;
+  active?: boolean;
+}
+
+export function getDashboard(token: string | null): Promise<DashboardData> {
+  return apiFetch<DashboardData>("/admin/dashboard", token);
+}
+
+export async function listTemplates(
+  token: string | null,
+): Promise<TemplateAdmin[]> {
+  const { templates } = await apiFetch<{ templates: TemplateAdmin[] }>(
+    "/admin/templates",
+    token,
+  );
+  return templates;
+}
+
+export function updateTemplate(
+  token: string | null,
+  id: string,
+  input: UpdateTemplateInput,
+): Promise<TemplateAdmin> {
+  return apiFetch<TemplateAdmin>(`/admin/templates/${id}`, token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function changeUserRole(
+  token: string | null,
+  userId: string,
+  role: UserSummary["role"],
+): Promise<{ id: string; role: UserSummary["role"] }> {
+  return apiFetch(`/admin/users/${userId}/role`, token, {
+    method: "POST",
+    body: JSON.stringify({ role }),
+  });
+}
+
+/** Fetch an export (CSV/PDF) as a Blob with the bearer token attached. */
+export async function fetchExport(
+  token: string | null,
+  path: string,
+): Promise<Blob> {
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Export ${path} failed: ${res.status}`);
+  return res.blob();
+}
