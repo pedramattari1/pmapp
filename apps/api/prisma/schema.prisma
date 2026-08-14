@@ -1,10 +1,5 @@
-// Phase 0 placeholder schema.
-// The real PM data model (assets, PM schedules, task instances, etc.) lands in
-// Phase 1 once BUILD_PLAN.md's data model is in hand. Do not add models here yet.
-// This file exists so `prisma validate` succeeds and the api is wired to
-// DATABASE_URL from day one. `prisma generate` intentionally is NOT part of the
-// build yet — there are no models to generate a client from until Phase 1, at
-// which point the build script re-adds `prisma generate`.
+// The Fay PM Platform — data model (BUILD_PLAN.md §4).
+// Phase 1: schema + seed only. Task rows are generated in Phase 2 (not seeded).
 
 generator client {
   provider = "prisma-client-js"
@@ -13,4 +8,182 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  ENGINEER
+  TECH
+  VIEWER
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+  NEEDS_REPAIR
+  PARTS
+  VENDOR
+  FOLLOW_UP
+}
+
+enum WorkOrderStatus {
+  OPEN
+  PARTS
+  VENDOR
+  FOLLOW_UP
+  CLOSED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  name      String
+  email     String   @unique
+  role      Role     @default(VIEWER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedTasks Task[]      @relation("TaskAssignee")
+  workOrders    WorkOrder[] @relation("WorkOrderAssignee")
+  auditLogs     AuditLog[]
+}
+
+model Asset {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  category       String
+  location       String
+  readingsConfig Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  templates PMTemplate[]
+  readings  Reading[]
+}
+
+model PMTemplate {
+  id               String    @id @default(cuid())
+  title            String    @unique
+  category         String
+  frequency        Frequency
+  checklistItems   String[]
+  requiredReadings Json // array of { type: string, unit: string }
+  weekday          Int? // WEEKLY: 0=Sun .. 6=Sat
+  dayOfMonth       Int? // MONTHLY: 1..31
+  active           Boolean   @default(true)
+  assetId          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  asset Asset? @relation(fields: [assetId], references: [id])
+  tasks Task[]
+
+  @@index([assetId])
+  @@index([frequency])
+}
+
+model Task {
+  id         String     @id @default(cuid())
+  templateId String
+  dueDate    DateTime
+  assigneeId String?
+  status     TaskStatus @default(OPEN)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  template       PMTemplate      @relation(fields: [templateId], references: [id])
+  assignee       User?           @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  checklistTicks ChecklistTick[]
+  readings       Reading[]
+  workOrders     WorkOrder[]
+  attachments    Attachment[]
+
+  @@index([templateId])
+  @@index([assigneeId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model ChecklistTick {
+  id     String  @id @default(cuid())
+  taskId String
+  label  String
+  done   Boolean @default(false)
+  note   String?
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model Reading {
+  id         String   @id @default(cuid())
+  taskId     String
+  assetId    String?
+  type       String
+  value      String
+  unit       String
+  capturedAt DateTime @default(now())
+
+  task  Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  asset Asset? @relation(fields: [assetId], references: [id])
+
+  @@index([taskId])
+  @@index([assetId])
+}
+
+model WorkOrder {
+  id          String          @id @default(cuid())
+  taskId      String?
+  title       String
+  description String
+  status      WorkOrderStatus @default(OPEN)
+  assigneeId  String?
+  dueDate     DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  task        Task?        @relation(fields: [taskId], references: [id])
+  assignee    User?        @relation("WorkOrderAssignee", fields: [assigneeId], references: [id])
+  attachments Attachment[]
+
+  @@index([taskId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  taskId      String?
+  workOrderId String?
+  url         String
+  caption     String?
+  createdAt   DateTime @default(now())
+
+  task      Task?      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([workOrderId])
+}
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  userId   String
+  entity   String
+  entityId String
+  action   String
+  at       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
 }

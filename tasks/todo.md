@@ -61,3 +61,41 @@ Decisions / deviations:
 Follow-ups before Phase 1:
 - **BUILD_PLAN.md is missing** — need it (or the regenerated monorepo version).
 - Provision Clerk + Railway, fill `.env` files, do the together-verification.
+
+---
+
+# Phase 1 — Data Model + Seed
+
+Goal (BUILD_PLAN §4 + §6): Prisma schema for all 9 models + enums, migration,
+and seed of 13 assets + 29 PM templates from pm-seed.json. No UI.
+
+## Tasks
+- [x] Prisma schema per §4 (User, Asset, PMTemplate, Task, ChecklistTick,
+      Reading, WorkOrder, Attachment, AuditLog) + 4 enums; arrays+JSON on
+      PMTemplate; weekday/dayOfMonth; indexes. Validated + formatted.
+- [x] prisma singleton `apps/api/src/prisma.ts`
+- [x] `apps/api/prisma/seed.ts` — upsert assets by name, templates by title,
+      resolve asset links, idempotent, prints summary
+- [x] Wiring: package.json `prisma.seed` config, `db:seed` script, re-added
+      `prisma generate` to build
+- [x] Repo gate: typecheck + lint + build clean (with generated client)
+- [x] Dry-validate seed data: 13 assets, 29 templates (2/3/24), all asset
+      refs resolve, no problems
+- [x] Migrate + seed + verify against Railway Postgres (via public proxy)
+
+## Notes
+- value on Reading is String (holds numbers and codes like "System error codes").
+- Task rows intentionally NOT seeded (generated in Phase 2).
+- Local .env uses Railway's DATABASE_PUBLIC_URL (public proxy). The deployed api
+  on Railway should use the internal postgres.railway.internal URL.
+
+## Review — Phase 1 DONE (2026-08-14)
+- Migration `20260814213600_init` applied cleanly to Railway Postgres.
+- `db:seed` populated **13 assets + 29 templates (2 daily / 3 weekly / 24
+  monthly)**; re-run is idempotent (no dupes).
+- Spot-checked via DB query: asset links, weekday/dayOfMonth, checklist items,
+  and requiredReadings all correct (Fire Pump → suction/discharge psi; Generator
+  → run time/fuel/battery).
+- Repo gate clean: `pnpm -r typecheck && lint && build`.
+- Not yet committed — awaiting go-ahead. Migration + seed + schema are staged
+  changes ready to commit.
