@@ -10,10 +10,20 @@ import { buildingToday, dayOfMonthOf, weekdayOf } from "./time.js";
  * means calling this repeatedly (every /today load, by any user) never
  * duplicates a task already generated for the day.
  */
+// Remember the last date we already generated for, so repeat /today loads (the
+// common case) skip the template scan + createMany entirely. Generation stays
+// idempotent regardless; this just avoids redundant round-trips within a day.
+let lastGeneratedDate: string | null = null;
+
 export async function generateTasksForToday(
   now: Date = new Date(),
 ): Promise<{ created: number; dueDate: Date }> {
   const today = buildingToday(now);
+  const todayKey = today.toISOString().slice(0, 10);
+  if (lastGeneratedDate === todayKey) {
+    return { created: 0, dueDate: today };
+  }
+
   const weekday = weekdayOf(today);
   const dayOfMonth = dayOfMonthOf(today);
 
@@ -35,7 +45,10 @@ export async function generateTasksForToday(
     }
   });
 
-  if (due.length === 0) return { created: 0, dueDate: today };
+  if (due.length === 0) {
+    lastGeneratedDate = todayKey;
+    return { created: 0, dueDate: today };
+  }
 
   const result = await prisma.task.createMany({
     data: due.map((t) => ({
@@ -46,5 +59,6 @@ export async function generateTasksForToday(
     skipDuplicates: true,
   });
 
+  lastGeneratedDate = todayKey;
   return { created: result.count, dueDate: today };
 }

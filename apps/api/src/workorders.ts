@@ -27,7 +27,11 @@ const detailInclude = {
 } satisfies Prisma.WorkOrderInclude;
 
 function loadDetail(id: string) {
-  return prisma.workOrder.findUnique({ where: { id }, include: detailInclude });
+  return prisma.workOrder.findUnique({
+    where: { id },
+    include: detailInclude,
+    relationLoadStrategy: "join",
+  });
 }
 
 /** Email the assignee when a work order is assigned/reassigned. */

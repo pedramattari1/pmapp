@@ -38,7 +38,12 @@ const detailInclude = {
 } satisfies Prisma.TaskInclude;
 
 async function loadDetail(id: string) {
-  return prisma.task.findUnique({ where: { id }, include: detailInclude });
+  // Single JOIN instead of one query per relation (was ~5 round-trips).
+  return prisma.task.findUnique({
+    where: { id },
+    include: detailInclude,
+    relationLoadStrategy: "join",
+  });
 }
 
 // GET /tasks/today — on-read generation, then today's tasks (mine + unassigned)

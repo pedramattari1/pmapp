@@ -5,7 +5,7 @@ import { requireAuth } from "./auth.js";
 import { runDailyDigest } from "./digest.js";
 import { env } from "./env.js";
 import { exportRouter } from "./export.js";
-import { prisma } from "./prisma.js";
+import { perfCounters, prisma } from "./prisma.js";
 import { tasksRouter } from "./tasks.js";
 import { workOrdersRouter } from "./workorders.js";
 
@@ -13,6 +13,20 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({ origin: env.WEB_ORIGIN }));
+
+// Perf diagnosis: log wall time + DB query count per request when PERF_LOG is set.
+if (process.env.PERF_LOG) {
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const q0 = perfCounters.queries;
+    res.on("finish", () => {
+      console.log(
+        `[perf] ${req.method} ${req.path} ${Date.now() - start}ms q=${perfCounters.queries - q0}`,
+      );
+    });
+    next();
+  });
+}
 
 // Public health check — no auth. Used by Railway and local smoke checks.
 app.get("/health", (_req, res) => {

@@ -1,7 +1,7 @@
 import { createClerkClient } from "@clerk/backend";
 import { Router } from "express";
 import type { Prisma } from "@prisma/client";
-import { requireAuth, requireRole } from "./auth.js";
+import { invalidateAuthCache, requireAuth, requireRole } from "./auth.js";
 import { env } from "./env.js";
 import { prisma } from "./prisma.js";
 import { buildingToday } from "./time.js";
@@ -131,6 +131,7 @@ adminRouter.post(
       publicMetadata: { role: body.role },
     });
     await prisma.user.update({ where: { id }, data: { role: body.role } });
+    invalidateAuthCache(user.clerkId); // role change takes effect immediately
     await prisma.auditLog.create({
       data: {
         userId: req.user!.id,

@@ -35,6 +35,13 @@ declare global {
   }
 }
 
+// Short-lived identity cache keyed by Clerk user id. Avoids a Clerk API call
+// (~90ms) + a DB user-upsert on every authenticated request. The token itself is
+// still verified per request (networkless, ~1ms); only the identity/role lookup
+// is cached. TTL is short so role changes propagate quickly.
+const AUTH_TTL_MS = 30_000;
+const authCache = new Map<string, { user: AuthUser; exp: number }>();
+
 function getBearerToken(req: Request): string | null {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) return null;
@@ -67,8 +74,20 @@ export async function requireAuth(
       return;
     }
 
+    // Fast path: recently-resolved identity (skips Clerk call + DB upsert).
+    const cached = authCache.get(userId);
+    if (cached && cached.exp > Date.now()) {
+      req.user = cached.user;
+      next();
+      return;
+    }
+
     // Role is authoritative from Clerk public metadata, fetched server-side.
+    const _t0 = Date.now();
     const clerkUser = await clerk.users.getUser(userId);
+    if (process.env.PERF_LOG) {
+      console.log(`[perf] clerk.users.getUser ${Date.now() - _t0}ms`);
+    }
     const role = normalizeRole(clerkUser.publicMetadata?.role);
     const email =
       clerkUser.primaryEmailAddress?.emailAddress ??
@@ -87,11 +106,18 @@ export async function requireAuth(
       select: { id: true },
     });
 
-    req.user = { id: dbUser.id, clerkId: userId, role };
+    const authUser: AuthUser = { id: dbUser.id, clerkId: userId, role };
+    authCache.set(userId, { user: authUser, exp: Date.now() + AUTH_TTL_MS });
+    req.user = authUser;
     next();
   } catch {
     res.status(401).json({ error: "Unauthorized" });
   }
+}
+
+/** Invalidate a cached identity (e.g. right after a server-side role change). */
+export function invalidateAuthCache(clerkId: string): void {
+  authCache.delete(clerkId);
 }
 
 /**

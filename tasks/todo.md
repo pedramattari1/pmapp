@@ -246,6 +246,55 @@ on-device install / low-signal run is the user's manual confirmation.
 - Mobile: bigger checklist checkboxes (h-6), full-width Save on mobile, /offline
   page. Repo gate clean; 8 web routes build.
 
+---
+
+# Redesign + Performance (2026-08-14)
+
+Hard constraint: **no changes to data model, API contracts, routes, or business
+logic.** Every feature keeps working exactly as-is. Order (user-set): Part 2
+diagnosis first (report) → Part 1 design system + Dashboard/Today (show) → rest.
+
+## PART 2 — Performance (measure first, then fix)
+- [ ] Instrument: request-timing middleware + Prisma query logging (temporary).
+- [ ] Measure each endpoint with a real token: /me, /tasks/today, /tasks/:id,
+      /work-orders, /admin/dashboard — wall time + query count. Look for:
+      - requireAuth doing clerk.users.getUser (network) + user upsert EVERY request
+      - generateTasksForToday running on every /today load
+      - POST /tasks/:id per-item upserts (many round-trips in the txn)
+      - N+1 in list/dashboard endpoints; missing indexes
+      - frontend: force-dynamic refetch every nav; no optimistic UI/caching
+- [ ] Report findings with real numbers (before).
+- [ ] Fix real causes only (no contract change): cache auth/role from token claims,
+      skip redundant work, optimistic UI on save, avoid full refetch. Re-measure.
+- [x] Report before/after on slowest interactions. Commit.
+
+### Part 2 findings + fixes (measured)
+Root causes: (1) every authed request did clerk.users.getUser (~90ms) + a DB
+user-upsert; (2) Prisma include fanned out to 1 query/relation (/tasks/:id=6,
+/today=7); (3) ~100ms/query local latency = Railway PUBLIC proxy (prod internal
+~1-5ms); (4) generateTasksForToday ran on every /today load.
+Fixes (no contract/model/route/logic change): in-memory auth cache by clerkId
+(30s TTL, invalidated on role change); generation memo (skip after first /today
+of the day); relationJoins for detail reads (5 queries → 1). Before→after median:
+/me 200→3, /tasks/today 920→203, /tasks/:id 695→104, /work-orders 299→107,
+/dashboard 450→214. Frontend optimistic UI folded into the Part 1 component
+rewrites. PERF_LOG-gated timing/query instrumentation left in place (dormant).
+
+## PART 1 — Design system + redesign
+- [ ] Tokens in globals.css/tailwind: accent, neutral gray scale, semantic status
+      colors (6 states), radius, shadow scale, spacing. Light theme now; wire dark
+      later (don't build).
+- [ ] App shell for all authed routes: left sidebar (Today/Work Orders/Dashboard/
+      Admin), product name top, user+role bottom; mobile → hamburger drawer; slim
+      top bar (page title + primary actions). Content max-width.
+- [ ] Redesign screens inside shell: Today, task detail, Work Orders, WO detail,
+      Dashboard, Admin. Real cards (border/shadow/padding), type hierarchy.
+- [ ] Status = colored badge everywhere; accent primary buttons, subdued secondary;
+      hover/active/focus/disabled states.
+- [ ] Loading (skeleton/spinner) + designed empty states on every screen.
+- [ ] Responsive; PWA/offline intact. **CHECKPOINT: show Dashboard + Today first.**
+- [ ] Apply to remaining screens. Commit.
+
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
 - `db:seed` populated **13 assets + 29 templates (2 daily / 3 weekly / 24
