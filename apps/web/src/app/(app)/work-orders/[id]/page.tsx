@@ -1,5 +1,4 @@
 import { auth } from "@clerk/nextjs/server";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WorkOrderDetailForm } from "@/components/work-order-detail";
 import { getWorkOrder, listUsers } from "@/lib/api";
@@ -23,15 +22,5 @@ export default async function WorkOrderPage({
   }
   const users = await listUsers(token);
 
-  return (
-    <div className="space-y-6">
-      <Link
-        href="/work-orders"
-        className="text-sm text-muted-foreground hover:underline"
-      >
-        ← Back to Work Orders
-      </Link>
-      <WorkOrderDetailForm initial={wo} users={users} />
-    </div>
-  );
+  return <WorkOrderDetailForm initial={wo} users={users} />;
 }

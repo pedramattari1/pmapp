@@ -1,11 +1,9 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
+import Link from "next/link";
 import { useState } from "react";
-import {
-  WorkOrderStatusBadge,
-  WO_STATUS_OPTIONS,
-} from "@/components/status-badge";
+import { WorkOrderStatusBadge, WO_STATUS_OPTIONS } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +17,7 @@ import {
 } from "@/lib/api";
 
 const selectClass =
-  "h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+  "h-9 w-full max-w-xs rounded-lg border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function WorkOrderDetailForm({
   initial,
@@ -75,12 +73,19 @@ export function WorkOrderDetailForm({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <>
+      <Link
+        href="/work-orders"
+        className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground"
+      >
+        ← Back to Work Orders
+      </Link>
+
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{wo.title}</h1>
+          <h1 className="page-title">{wo.title}</h1>
           {wo.task && (
-            <p className="text-sm text-muted-foreground">
+            <p className="mt-0.5 text-sm text-muted-foreground">
               From task: {wo.task.template.title}
             </p>
           )}
@@ -88,107 +93,108 @@ export function WorkOrderDetailForm({
         <WorkOrderStatusBadge status={wo.status} />
       </div>
 
-      <div className="grid gap-1">
-        <Label>Title</Label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+      <div className="space-y-4">
+        <section className="card-surface space-y-4 p-5">
+          <div className="grid gap-1">
+            <Label>Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="grid gap-1">
+            <Label>Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-1">
+              <Label>Status</Label>
+              <select
+                className={selectClass}
+                value={status}
+                onChange={(e) => setStatus(e.target.value as WorkOrderStatus)}
+              >
+                {WO_STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-1">
+              <Label>Assignee</Label>
+              <select
+                className={selectClass}
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+              >
+                <option value="">Unassigned</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-1">
+              <Label>Due date</Label>
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="card-surface p-5">
+          <h2 className="section-label mb-3">Photos / Attachments</h2>
+          {wo.attachments.length === 0 && pendingAttachments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">None yet.</p>
+          ) : (
+            <ul className="mb-3 space-y-1 text-sm">
+              {wo.attachments.map((a) => (
+                <li key={a.id}>
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all text-primary underline"
+                  >
+                    {a.caption || a.url}
+                  </a>
+                </li>
+              ))}
+              {pendingAttachments.map((a, i) => (
+                <li key={`p-${i}`} className="break-all text-muted-foreground">
+                  {a.url} <span className="italic">(unsaved)</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Input
+              className="max-w-sm"
+              placeholder="https://… image URL"
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+            />
+            <Button type="button" variant="outline" onClick={addAttachment}>
+              Add
+            </Button>
+          </div>
+        </section>
       </div>
 
-      <div className="grid gap-1">
-        <Label>Description</Label>
-        <Textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-1">
-        <Label>Status</Label>
-        <select
-          className={selectClass}
-          value={status}
-          onChange={(e) => setStatus(e.target.value as WorkOrderStatus)}
-        >
-          {WO_STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="grid gap-1">
-        <Label>Assignee</Label>
-        <select
-          className={selectClass}
-          value={assigneeId}
-          onChange={(e) => setAssigneeId(e.target.value)}
-        >
-          <option value="">Unassigned</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name} ({u.role})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="grid gap-1">
-        <Label>Due date</Label>
-        <Input
-          type="date"
-          className="max-w-xs"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
-      </div>
-
-      <section className="space-y-2">
-        <Label>Photos / Attachments</Label>
-        {wo.attachments.length === 0 && pendingAttachments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">None yet.</p>
-        ) : (
-          <ul className="space-y-1 text-sm">
-            {wo.attachments.map((a) => (
-              <li key={a.id}>
-                <a
-                  href={a.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary underline break-all"
-                >
-                  {a.caption || a.url}
-                </a>
-              </li>
-            ))}
-            {pendingAttachments.map((a, i) => (
-              <li key={`p-${i}`} className="text-muted-foreground break-all">
-                {a.url} <span className="italic">(unsaved)</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <Input
-            className="max-w-sm"
-            placeholder="https://… image URL"
-            value={newUrl}
-            onChange={(e) => setNewUrl(e.target.value)}
-          />
-          <Button type="button" variant="outline" onClick={addAttachment}>
-            Add
-          </Button>
-        </div>
-      </section>
-
-      <div className="flex items-center gap-4 border-t pt-4">
-        <Button onClick={onSave} disabled={saving}>
+      <div className="sticky bottom-0 mt-4 flex flex-wrap items-center gap-4 border-t border-border bg-background/80 py-4 backdrop-blur">
+        <Button onClick={onSave} disabled={saving} size="lg" className="w-full sm:w-auto">
           {saving ? "Saving…" : "Save"}
         </Button>
         {savedAt && !error && (
-          <span className="text-sm text-green-600">Saved at {savedAt}</span>
+          <span className="text-sm text-emerald-600">Saved at {savedAt}</span>
         )}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
-    </div>
+    </>
   );
 }

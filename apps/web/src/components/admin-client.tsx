@@ -2,6 +2,7 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { useState } from "react";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,7 +20,7 @@ const ROLES: UserSummary["role"][] = [
   "VIEWER",
 ];
 const selectClass =
-  "h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+  "h-9 rounded-lg border border-input bg-card px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function TemplateRow({ template }: { template: TemplateAdmin }) {
   const { getToken } = useAuth();
@@ -43,26 +44,28 @@ function TemplateRow({ template }: { template: TemplateAdmin }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-      <label className="flex items-center gap-2 text-sm">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+      <label className="flex items-center gap-2 text-sm text-muted-foreground">
         <input
           type="checkbox"
           className="h-4 w-4"
           checked={active}
           onChange={(e) => setActive(e.target.checked)}
         />
-        active
+        Active
       </label>
       <Input
         className="min-w-[16rem] flex-1"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <span className="text-xs text-muted-foreground">{template.frequency}</span>
+      <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+        {template.frequency}
+      </span>
       <Button size="sm" variant="outline" onClick={save} disabled={busy}>
         {busy ? "Saving…" : "Save"}
       </Button>
-      {msg && <span className="text-xs text-green-600">{msg}</span>}
+      {msg && <span className="text-xs text-emerald-600">{msg}</span>}
     </div>
   );
 }
@@ -86,13 +89,13 @@ function UserRow({ user }: { user: UserSummary }) {
   }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border p-3">
-      <div>
-        <div className="text-sm font-medium">{user.name}</div>
-        <div className="text-xs text-muted-foreground">{user.email}</div>
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium">{user.name}</div>
+        <div className="truncate text-xs text-muted-foreground">{user.email}</div>
       </div>
       <div className="flex items-center gap-2">
-        {msg && <span className="text-xs text-green-600">{msg}</span>}
+        {msg && <span className="text-xs text-emerald-600">{msg}</span>}
         <select
           className={selectClass}
           value={role}
@@ -117,30 +120,26 @@ export function AdminClient({
   users: UserSummary[];
 }) {
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Admin</h1>
+    <>
+      <PageHeader title="Admin" subtitle="Manage users, roles, and templates" />
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Users &amp; roles
-        </h2>
-        <div className="space-y-2">
+      <section className="mb-6">
+        <h2 className="section-label mb-2">Users &amp; roles</h2>
+        <div className="card-surface divide-y divide-border overflow-hidden">
           {users.map((u) => (
             <UserRow key={u.id} user={u} />
           ))}
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Templates ({templates.length})
-        </h2>
-        <div className="space-y-2">
+      <section>
+        <h2 className="section-label mb-2">Templates ({templates.length})</h2>
+        <div className="card-surface divide-y divide-border overflow-hidden">
           {templates.map((t) => (
             <TemplateRow key={t.id} template={t} />
           ))}
         </div>
       </section>
-    </div>
+    </>
   );
 }

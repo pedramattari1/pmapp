@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { AdminClient } from "@/components/admin-client";
+import { PageHeader } from "@/components/page-header";
 import { listTemplates, listUsers } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,12 @@ export default async function AdminPage() {
     ]);
   } catch {
     return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Admin</h1>
-        <p className="text-muted-foreground">
-          Managers only. Your role doesn&apos;t have access to this page.
-        </p>
-      </div>
+      <>
+        <PageHeader title="Admin" />
+        <div className="card-surface p-8 text-center text-sm text-muted-foreground">
+          Managers only — your role doesn&apos;t have access to this page.
+        </div>
+      </>
     );
   }
 

@@ -1,5 +1,4 @@
 import { auth } from "@clerk/nextjs/server";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TaskDetailForm } from "@/components/task-detail";
 import { getTask, listUsers } from "@/lib/api";
@@ -23,12 +22,5 @@ export default async function TaskPage({
   }
   const users = await listUsers(token);
 
-  return (
-    <div className="space-y-6">
-      <Link href="/today" className="text-sm text-muted-foreground hover:underline">
-        ← Back to Today
-      </Link>
-      <TaskDetailForm initial={task} users={users} />
-    </div>
-  );
+  return <TaskDetailForm initial={task} users={users} />;
 }

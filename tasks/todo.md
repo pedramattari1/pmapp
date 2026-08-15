@@ -293,7 +293,19 @@ rewrites. PERF_LOG-gated timing/query instrumentation left in place (dormant).
       hover/active/focus/disabled states.
 - [ ] Loading (skeleton/spinner) + designed empty states on every screen.
 - [ ] Responsive; PWA/offline intact. **CHECKPOINT: show Dashboard + Today first.**
-- [ ] Apply to remaining screens. Commit.
+- [x] Apply to remaining screens. Commit.
+
+### Part 1 result
+Design tokens in globals.css (indigo accent, slate neutrals, 6 semantic status
+colors, radius/shadow/spacing; dark wired, not shipped). App shell (sidebar +
+mobile drawer + user/role card) wraps all authed routes. Redesigned Today,
+Dashboard (approved at checkpoint), task detail, Work Orders list + detail, Admin
+— all in card-surface with PageHeader type hierarchy, soft status badges, refined
+Button (accent primary / subdued secondary / focus+active+disabled), loading
+skeletons (loading.tsx) + designed empty states everywhere. Responsive; PWA/
+offline intact. No data/API/route/logic changes. Typecheck + lint + prod build
+clean. Today + Dashboard verified with live screenshots; remaining screens are
+compositions of the same verified primitives.
 
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
