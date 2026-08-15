@@ -40,4 +40,25 @@ Patterns learned from corrections, so the same mistake isn't repeated.
   test users (delete Clerk users + synced DB rows) — and if the run aborts early,
   sweep leftovers by email query (rbac-*@example.com).
 
+## Service workers + Clerk (host_invalid)
+- A service worker that caches/serves HTML **documents** breaks Clerk sign-in:
+  Clerk's dev-mode embeds short-lived handshake state in the page, so a stale
+  cached document → FAPI rejects with `host_invalid` ("Invalid host"). Also never
+  precache a protected route (it caches the signed-out handshake response).
+  Rule: SW must be **network-only for navigations** (documents), fallback to a
+  static /offline page only on network failure; cache **only** immutable static
+  assets (/_next/static, icons, fonts). Diagnose server-vs-client by curling the
+  page from the server — if the server body has no `host_invalid`, it's the
+  client (SW/cache), not the keys. Recovery for a stuck browser: DevTools →
+  Application → Service Workers → Unregister + Clear site data, then reload.
+
+## Don't pollute dev .next with placeholder NEXT_PUBLIC keys
+- Running `pnpm -r build` with a DUMMY NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (e.g.
+  the "example.clerk.accounts.dev" placeholder) bakes that key into apps/web/.next
+  (middleware.js + prerendered HTML). A running `next dev` then serves the stale
+  build and Clerk redirects to the wrong FAPI host → host_invalid. Prevention:
+  don't export placeholder NEXT_PUBLIC_* when building in the same tree a dev
+  server uses; if you must, `rm -rf apps/web/.next` and restart dev afterward.
+  Verify with: curl the served page and grep the pk_test_ key / decode it.
+
 <!-- Append new lessons below as: pattern → preventing rule -->
