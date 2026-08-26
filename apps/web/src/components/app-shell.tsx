@@ -5,6 +5,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Menu,
+  Package,
   Settings,
   Wrench,
   X,
@@ -23,6 +24,7 @@ interface NavItem {
 const BASE_NAV: NavItem[] = [
   { label: "Today", href: "/today", icon: CalendarDays },
   { label: "Work Orders", href: "/work-orders", icon: Wrench },
+  { label: "Assets", href: "/assets", icon: Package },
 ];
 const MANAGER_NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },

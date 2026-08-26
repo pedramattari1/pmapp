@@ -309,6 +309,52 @@ export async function listAssets(token: string | null): Promise<AssetSummary[]> 
   return assets;
 }
 
+// ---- Assets registry + history ----
+
+export interface AssetListItem {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  templateCount: number;
+}
+
+export interface AssetHistory {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  templates: { id: string; title: string; frequency: Frequency; active: boolean }[];
+  recentTasks: {
+    id: string;
+    dueDate: string;
+    status: TaskStatus;
+    templateTitle: string;
+    assignee: string | null;
+    readings: { type: string; value: string; unit: string }[];
+  }[];
+  workOrders: {
+    id: string;
+    title: string;
+    status: WorkOrderStatus;
+    createdAt: string;
+  }[];
+}
+
+export async function listBuildingAssets(
+  token: string | null,
+): Promise<AssetListItem[]> {
+  const { assets } = await apiFetch<{ assets: AssetListItem[] }>("/assets", token);
+  return assets;
+}
+
+export function getAssetHistory(
+  token: string | null,
+  id: string,
+): Promise<AssetHistory> {
+  return apiFetch<AssetHistory>(`/assets/${id}`, token);
+}
+
 export function changeUserRole(
   token: string | null,
   userId: string,

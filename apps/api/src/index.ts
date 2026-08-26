@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { adminRouter } from "./admin.js";
+import { assetsRouter } from "./assets.js";
 import { requireAuth } from "./auth.js";
 import { runDailyDigest } from "./digest.js";
 import { env } from "./env.js";
@@ -53,6 +54,9 @@ app.use("/tasks", tasksRouter);
 
 // Work orders: deficiency tracking + assignment notifications.
 app.use("/work-orders", workOrdersRouter);
+
+// Assets: equipment registry + per-asset history.
+app.use("/assets", assetsRouter);
 
 // Admin surface: templates, user-role changes, dashboard (role-gated inside).
 app.use("/admin", adminRouter);
