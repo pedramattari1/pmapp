@@ -17,6 +17,7 @@ import {
   type UserSummary,
   type WorkOrderDetail,
 } from "@/lib/api";
+import { PhotoUpload } from "@/components/photo-upload";
 import { enqueueSave } from "@/lib/offline-queue";
 
 interface TickState {
@@ -368,10 +369,17 @@ export function TaskDetailForm({
               ))}
             </ul>
           )}
+          <div className="mb-3">
+            <PhotoUpload
+              onUploaded={(urls) =>
+                setPendingAttachments((p) => [...p, ...urls.map((url) => ({ url }))])
+              }
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             <Input
               className="max-w-sm"
-              placeholder="https://… image URL"
+              placeholder="…or paste an image URL"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
             />

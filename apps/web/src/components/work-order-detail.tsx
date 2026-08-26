@@ -3,6 +3,7 @@
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState } from "react";
+import { PhotoUpload } from "@/components/photo-upload";
 import { WorkOrderStatusBadge, WO_STATUS_OPTIONS } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -172,10 +173,17 @@ export function WorkOrderDetailForm({
               ))}
             </ul>
           )}
+          <div className="mb-3">
+            <PhotoUpload
+              onUploaded={(urls) =>
+                setPendingAttachments((p) => [...p, ...urls.map((url) => ({ url }))])
+              }
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             <Input
               className="max-w-sm"
-              placeholder="https://… image URL"
+              placeholder="…or paste an image URL"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
             />

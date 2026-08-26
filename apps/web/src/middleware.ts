@@ -5,6 +5,9 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/offline",
+  // UploadThing's server callback has no Clerk session; the upload initiation is
+  // still authorized inside the file router's middleware.
+  "/api/uploadthing(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
