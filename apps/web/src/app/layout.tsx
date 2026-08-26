@@ -22,7 +22,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up">
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/today"
+      signUpFallbackRedirectUrl="/today"
+    >
       <html lang="en">
         <body className="min-h-screen bg-background text-foreground antialiased">
           <ServiceWorkerRegistrar />
