@@ -110,8 +110,11 @@ export async function requireAuth(
     authCache.set(userId, { user: authUser, exp: Date.now() + AUTH_TTL_MS });
     req.user = authUser;
     next();
-  } catch {
-    res.status(401).json({ error: "Unauthorized" });
+  } catch (err) {
+    // TEMP diagnostics: surface why token verification failed (revert after debug).
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error("[auth] verification failed:", reason);
+    res.status(401).json({ error: "Unauthorized", reason });
   }
 }
 
