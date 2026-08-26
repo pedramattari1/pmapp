@@ -61,4 +61,25 @@ Patterns learned from corrections, so the same mistake isn't repeated.
   server uses; if you must, `rm -rf apps/web/.next` and restart dev afterward.
   Verify with: curl the served page and grep the pk_test_ key / decode it.
 
+## Deploying the pnpm monorepo (Vercel + Railway) — the gotchas
+- **Vercel (web):** Root Directory MUST be `apps/web`; Framework Preset MUST be
+  Next.js (not "Other"/"Express", or you get "No entrypoint found"). Env vars:
+  `NEXT_PUBLIC_*` must be type **Config/plaintext** (Sensitive can't be converted
+  later — delete + re-add). `NEXT_PUBLIC_API_URL` must include `https://` (a bare
+  host → `TypeError: Failed to parse URL`). Set `NEXT_PUBLIC_CLERK_SIGN_IN_URL`
+  (+ SIGN_UP + fallback redirect) so middleware uses in-app /sign-in, not Clerk's
+  Account Portal (avoids the accounts.dev redirect loop).
+- **Railway (api):** Railpack kept detecting npm → "pnpm: not found" even with
+  corepack. Fix = a root **Dockerfile** + `railway.json` (`builder: DOCKERFILE`).
+  CRITICAL: the Railway service **Root Directory must be empty (repo root)**, not
+  `apps/api` — otherwise the Docker build context is just apps/api and the
+  workspace root (pnpm-workspace.yaml, lockfile) is missing. A `RUN test -f
+  pnpm-workspace.yaml || (echo ... && exit 1)` guard makes that failure obvious.
+  Use `pnpm install --no-frozen-lockfile` for resilience. Start = `pnpm --filter
+  api start:prod` (migrate deploy + node). DATABASE_URL = internal reference.
+- **Debugging prod-only 401s:** our requireAuth catch was silent; temporarily
+  returning the verifyToken error reason (then reverting) pinpointed it. But the
+  real cause here was that failed builds meant new env/secret never deployed —
+  always confirm the ACTIVE deploy SHA is recent before blaming a secret.
+
 <!-- Append new lessons below as: pattern → preventing rule -->

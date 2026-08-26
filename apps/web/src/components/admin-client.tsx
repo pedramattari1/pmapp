@@ -3,11 +3,11 @@
 import { useAuth } from "@clerk/nextjs";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { TemplateEditor } from "@/components/template-editor";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   changeUserRole,
-  updateTemplate,
+  type AssetSummary,
   type TemplateAdmin,
   type UserSummary,
 } from "@/lib/api";
@@ -21,54 +21,6 @@ const ROLES: UserSummary["role"][] = [
 ];
 const selectClass =
   "h-9 rounded-lg border border-input bg-card px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-
-function TemplateRow({ template }: { template: TemplateAdmin }) {
-  const { getToken } = useAuth();
-  const [title, setTitle] = useState(template.title);
-  const [active, setActive] = useState(template.active);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const token = await getToken();
-      await updateTemplate(token, template.id, { title, active });
-      setMsg("Saved");
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <label className="flex items-center gap-2 text-sm text-muted-foreground">
-        <input
-          type="checkbox"
-          className="h-4 w-4"
-          checked={active}
-          onChange={(e) => setActive(e.target.checked)}
-        />
-        Active
-      </label>
-      <Input
-        className="min-w-[16rem] flex-1"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-        {template.frequency}
-      </span>
-      <Button size="sm" variant="outline" onClick={save} disabled={busy}>
-        {busy ? "Saving…" : "Save"}
-      </Button>
-      {msg && <span className="text-xs text-emerald-600">{msg}</span>}
-    </div>
-  );
-}
 
 function UserRow({ user }: { user: UserSummary }) {
   const { getToken } = useAuth();
@@ -112,18 +64,43 @@ function UserRow({ user }: { user: UserSummary }) {
   );
 }
 
+function scheduleLabel(t: TemplateAdmin): string {
+  if (t.frequency === "DAILY") return "Daily";
+  if (t.frequency === "WEEKLY") {
+    const d = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][t.weekday ?? 0];
+    return `Weekly · ${d}`;
+  }
+  return `Monthly · day ${t.dayOfMonth ?? 1}`;
+}
+
 export function AdminClient({
-  templates,
+  templates: initialTemplates,
   users,
+  assets,
 }: {
   templates: TemplateAdmin[];
   users: UserSummary[];
+  assets: AssetSummary[];
 }) {
+  const [templates, setTemplates] = useState(initialTemplates);
+  const [editing, setEditing] = useState<TemplateAdmin | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  function handleSaved(saved: TemplateAdmin, isNew: boolean) {
+    setTemplates((list) =>
+      isNew
+        ? [...list, saved].sort((a, b) => a.title.localeCompare(b.title))
+        : list.map((t) => (t.id === saved.id ? saved : t)),
+    );
+    setEditing(null);
+    setCreating(false);
+  }
+
   return (
     <>
       <PageHeader title="Admin" subtitle="Manage users, roles, and templates" />
 
-      <section className="mb-6">
+      <section className="mb-8">
         <h2 className="section-label mb-2">Users &amp; roles</h2>
         <div className="card-surface divide-y divide-border overflow-hidden">
           {users.map((u) => (
@@ -133,13 +110,55 @@ export function AdminClient({
       </section>
 
       <section>
-        <h2 className="section-label mb-2">Templates ({templates.length})</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="section-label">Templates ({templates.length})</h2>
+          <Button size="sm" onClick={() => setCreating(true)}>
+            + New template
+          </Button>
+        </div>
         <div className="card-surface divide-y divide-border overflow-hidden">
           {templates.map((t) => (
-            <TemplateRow key={t.id} template={t} />
+            <div
+              key={t.id}
+              className="flex items-center justify-between gap-3 px-4 py-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full ${
+                    t.active ? "bg-emerald-500" : "bg-slate-300"
+                  }`}
+                  title={t.active ? "Active" : "Inactive"}
+                />
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{t.title}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {t.category} · {scheduleLabel(t)}
+                    {t.checklistItems.length ? ` · ${t.checklistItems.length} items` : ""}
+                    {t.requiredReadings.length
+                      ? ` · ${t.requiredReadings.length} readings`
+                      : ""}
+                  </div>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setEditing(t)}>
+                Edit
+              </Button>
+            </div>
           ))}
         </div>
       </section>
+
+      {(editing || creating) && (
+        <TemplateEditor
+          template={editing}
+          assets={assets}
+          onClose={() => {
+            setEditing(null);
+            setCreating(false);
+          }}
+          onSaved={handleSaved}
+        />
+      )}
     </>
   );
 }

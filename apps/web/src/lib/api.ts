@@ -242,9 +242,22 @@ export interface UpdateTemplateInput {
   category?: string;
   frequency?: Frequency;
   checklistItems?: string[];
+  requiredReadings?: ReadingSpec[];
   weekday?: number | null;
   dayOfMonth?: number | null;
   active?: boolean;
+  assetId?: string | null;
+}
+
+export type CreateTemplateInput = UpdateTemplateInput & {
+  title: string;
+  frequency: Frequency;
+};
+
+export interface AssetSummary {
+  id: string;
+  name: string;
+  category: string;
 }
 
 export function getDashboard(token: string | null): Promise<DashboardData> {
@@ -270,6 +283,24 @@ export function updateTemplate(
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export function createTemplate(
+  token: string | null,
+  input: CreateTemplateInput,
+): Promise<TemplateAdmin> {
+  return apiFetch<TemplateAdmin>("/admin/templates", token, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listAssets(token: string | null): Promise<AssetSummary[]> {
+  const { assets } = await apiFetch<{ assets: AssetSummary[] }>(
+    "/admin/assets",
+    token,
+  );
+  return assets;
 }
 
 export function changeUserRole(

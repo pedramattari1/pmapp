@@ -307,6 +307,23 @@ offline intact. No data/API/route/logic changes. Typecheck + lint + prod build
 clean. Today + Dashboard verified with live screenshots; remaining screens are
 compositions of the same verified primitives.
 
+---
+
+# Post-launch features (2026-08-26) — user requested all 7
+
+Live app: web on Vercel, api+db on Railway. Ship each feature via git push
+(auto-deploys). Order:
+1. [in progress] Full template editor in Admin — edit frequency/weekday/dayOfMonth/
+   checklist/readings/category/asset/active + CREATE new templates. (User blocker.)
+2. [ ] Overdue & upcoming on Today + clickable Dashboard overdue count.
+3. [ ] Task assignment UI (assigneeId already in model).
+4. [ ] Standalone "+ New Work Order" (not tied to a task).
+5. [ ] Real photo upload via UploadThing (build UI, wire to UPLOADTHING_TOKEN,
+   ready like Resend). NOT Cloudflare — UploadThing fits one building.
+6. [ ] Per-asset history view.
+7. [ ] Email: code is already in place (Phase 3), just needs RESEND_API_KEY —
+   leave off, keep build-ready.
+
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
 - `db:seed` populated **13 assets + 29 templates (2 daily / 3 weekly / 24

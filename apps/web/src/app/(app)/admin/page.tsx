@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { AdminClient } from "@/components/admin-client";
 import { PageHeader } from "@/components/page-header";
-import { listTemplates, listUsers } from "@/lib/api";
+import { listAssets, listTemplates, listUsers } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +11,12 @@ export default async function AdminPage() {
 
   let templates;
   let users;
+  let assets;
   try {
-    [templates, users] = await Promise.all([
+    [templates, users, assets] = await Promise.all([
       listTemplates(token),
       listUsers(token),
+      listAssets(token),
     ]);
   } catch {
     return (
@@ -27,5 +29,5 @@ export default async function AdminPage() {
     );
   }
 
-  return <AdminClient templates={templates} users={users} />;
+  return <AdminClient templates={templates} users={users} assets={assets} />;
 }

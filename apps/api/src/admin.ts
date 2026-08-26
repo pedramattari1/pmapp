@@ -18,6 +18,78 @@ function isRole(v: unknown): v is Role {
 
 const FREQUENCIES = ["DAILY", "WEEKLY", "MONTHLY"] as const;
 
+const TEMPLATE_SELECT = {
+  id: true,
+  title: true,
+  category: true,
+  frequency: true,
+  weekday: true,
+  dayOfMonth: true,
+  active: true,
+  checklistItems: true,
+  requiredReadings: true,
+  asset: { select: { id: true, name: true } },
+} satisfies Prisma.PMTemplateSelect;
+
+function loadTemplate(id: string) {
+  return prisma.pMTemplate.findUnique({ where: { id }, select: TEMPLATE_SELECT });
+}
+
+type Frequency = (typeof FREQUENCIES)[number];
+
+interface TemplateFields {
+  title?: string;
+  category?: string;
+  frequency?: Frequency;
+  checklistItems?: string[];
+  requiredReadings?: { type: string; unit: string }[];
+  weekday?: number | null;
+  dayOfMonth?: number | null;
+  active?: boolean;
+  assetId: string | null;
+  assetIdProvided: boolean;
+}
+
+// Validate + normalize a template create/update body. Returns {error} on bad input.
+function parseTemplateBody(raw: unknown): TemplateFields | { error: string } {
+  const body = (raw ?? {}) as Record<string, unknown>;
+  const out: TemplateFields = { assetId: null, assetIdProvided: false };
+
+  if (typeof body.title === "string" && body.title.trim()) out.title = body.title.trim();
+  if (typeof body.category === "string") out.category = body.category.trim();
+  if (body.frequency !== undefined) {
+    if (!(FREQUENCIES as readonly string[]).includes(String(body.frequency))) {
+      return { error: "Invalid frequency" };
+    }
+    out.frequency = body.frequency as Frequency;
+  }
+  if (Array.isArray(body.checklistItems)) {
+    out.checklistItems = body.checklistItems
+      .map((x) => String(x).trim())
+      .filter((x) => x.length > 0);
+  }
+  if (Array.isArray(body.requiredReadings)) {
+    out.requiredReadings = body.requiredReadings
+      .map((r) => r as { type?: unknown; unit?: unknown })
+      .filter((r) => typeof r.type === "string" && (r.type as string).trim())
+      .map((r) => ({
+        type: String(r.type).trim(),
+        unit: typeof r.unit === "string" ? r.unit.trim() : "",
+      }));
+  }
+  if (body.weekday !== undefined)
+    out.weekday = body.weekday === null || body.weekday === "" ? null : Number(body.weekday);
+  if (body.dayOfMonth !== undefined)
+    out.dayOfMonth =
+      body.dayOfMonth === null || body.dayOfMonth === "" ? null : Number(body.dayOfMonth);
+  if (typeof body.active === "boolean") out.active = body.active;
+
+  out.assetIdProvided = "assetId" in body;
+  out.assetId = typeof body.assetId === "string" && body.assetId ? body.assetId : null;
+
+  return out;
+}
+
 // --- Templates (ADMIN | MANAGER) ---
 
 adminRouter.get(
@@ -60,34 +132,23 @@ adminRouter.post(
       return;
     }
 
-    const body = req.body as {
-      title?: unknown;
-      category?: unknown;
-      frequency?: unknown;
-      checklistItems?: unknown;
-      weekday?: unknown;
-      dayOfMonth?: unknown;
-      active?: unknown;
-    };
-
+    const p = parseTemplateBody(req.body);
+    if ("error" in p) {
+      res.status(400).json({ error: p.error });
+      return;
+    }
     const data: Prisma.PMTemplateUpdateInput = {};
-    if (typeof body.title === "string" && body.title.trim()) data.title = body.title.trim();
-    if (typeof body.category === "string") data.category = body.category.trim();
-    if (body.frequency !== undefined) {
-      if (!(FREQUENCIES as readonly string[]).includes(String(body.frequency))) {
-        res.status(400).json({ error: "Invalid frequency" });
-        return;
-      }
-      data.frequency = body.frequency as (typeof FREQUENCIES)[number];
+    if (p.title !== undefined) data.title = p.title;
+    if (p.category !== undefined) data.category = p.category;
+    if (p.frequency !== undefined) data.frequency = p.frequency;
+    if (p.checklistItems !== undefined) data.checklistItems = p.checklistItems;
+    if (p.requiredReadings !== undefined) data.requiredReadings = p.requiredReadings;
+    if (p.weekday !== undefined) data.weekday = p.weekday;
+    if (p.dayOfMonth !== undefined) data.dayOfMonth = p.dayOfMonth;
+    if (p.active !== undefined) data.active = p.active;
+    if (p.assetIdProvided) {
+      data.asset = p.assetId ? { connect: { id: p.assetId } } : { disconnect: true };
     }
-    if (Array.isArray(body.checklistItems)) {
-      data.checklistItems = body.checklistItems.map((x) => String(x));
-    }
-    if (body.weekday !== undefined)
-      data.weekday = body.weekday === null ? null : Number(body.weekday);
-    if (body.dayOfMonth !== undefined)
-      data.dayOfMonth = body.dayOfMonth === null ? null : Number(body.dayOfMonth);
-    if (typeof body.active === "boolean") data.active = body.active;
 
     await prisma.$transaction(async (tx) => {
       await tx.pMTemplate.update({ where: { id }, data });
@@ -96,7 +157,57 @@ adminRouter.post(
       });
     });
 
-    res.json(await prisma.pMTemplate.findUnique({ where: { id } }));
+    res.json(await loadTemplate(id));
+  },
+);
+
+// Create a new template (ADMIN | MANAGER).
+adminRouter.post(
+  "/templates",
+  requireAuth,
+  requireRole("ADMIN", "MANAGER"),
+  async (req, res) => {
+    const p = parseTemplateBody(req.body);
+    if ("error" in p) {
+      res.status(400).json({ error: p.error });
+      return;
+    }
+    if (!p.title || !p.frequency) {
+      res.status(400).json({ error: "Title and frequency are required" });
+      return;
+    }
+    const created = await prisma.pMTemplate.create({
+      data: {
+        title: p.title,
+        frequency: p.frequency,
+        category: p.category ?? "General",
+        checklistItems: p.checklistItems ?? [],
+        requiredReadings: p.requiredReadings ?? [],
+        weekday: p.weekday ?? null,
+        dayOfMonth: p.dayOfMonth ?? null,
+        active: p.active ?? true,
+        assetId: p.assetId,
+      },
+      select: { id: true },
+    });
+    await prisma.auditLog.create({
+      data: { userId: req.user!.id, entity: "PMTemplate", entityId: created.id, action: "CREATE" },
+    });
+    res.status(201).json(await loadTemplate(created.id));
+  },
+);
+
+// Assets list — for the template editor's asset picker.
+adminRouter.get(
+  "/assets",
+  requireAuth,
+  requireRole("ADMIN", "MANAGER"),
+  async (_req, res) => {
+    const assets = await prisma.asset.findMany({
+      select: { id: true, name: true, category: true },
+      orderBy: { name: "asc" },
+    });
+    res.json({ assets });
   },
 );
 
