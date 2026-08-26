@@ -315,14 +315,17 @@ Live app: web on Vercel, api+db on Railway. Ship each feature via git push
 (auto-deploys). Order:
 1. [x] Full template editor in Admin — edit frequency/weekday/dayOfMonth/
    checklist/readings/category/asset/active + CREATE new templates. Live+verified.
-2. [ ] Overdue & upcoming on Today + clickable Dashboard overdue count.
-3. [ ] Task assignment UI (assigneeId already in model).
-4. [ ] Standalone "+ New Work Order" (not tied to a task).
-5. [ ] Real photo upload via UploadThing (build UI, wire to UPLOADTHING_TOKEN,
-   ready like Resend). NOT Cloudflare — UploadThing fits one building.
-6. [ ] Per-asset history view.
-7. [ ] Email: code is already in place (Phase 3), just needs RESEND_API_KEY —
-   leave off, keep build-ready.
+2. [x] Overdue on Today (red section) + clickable Dashboard overdue card. Live.
+   (Upcoming deferred — future tasks aren't pre-generated; needs a preview design.)
+3. [x] Task assignment UI (POST /tasks/:id assigneeId + "Assigned to" selector). Live.
+4. [x] Standalone "+ New Work Order" on /work-orders. Live.
+5. [x] Real photo upload via UploadThing — UI + route wired to UPLOADTHING_TOKEN,
+   ready like Resend (paste-URL fallback kept). Live (needs token to function).
+6. [x] Per-asset history (/assets + /assets/[id]) + nav link. Live+verified.
+7. [~] Email: code in place (Phase 3), needs RESEND_API_KEY — build-ready, off.
+
+All verified live: /tasks/today.overdue=4, /assets=13, /assets/:id works, template
+create/edit 201/200, assignment save. Vercel+Railway auto-deployed each push.
 
 ## Review — Phase 1 DONE (2026-08-14)
 - Migration `20260814213600_init` applied cleanly to Railway Postgres.
