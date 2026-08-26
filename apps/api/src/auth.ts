@@ -111,10 +111,12 @@ export async function requireAuth(
     req.user = authUser;
     next();
   } catch (err) {
-    // TEMP diagnostics: surface why token verification failed (revert after debug).
-    const reason = err instanceof Error ? err.message : String(err);
-    console.error("[auth] verification failed:", reason);
-    res.status(401).json({ error: "Unauthorized", reason });
+    // Log the reason server-side for ops; don't leak it to clients.
+    console.error(
+      "[auth] token verification failed:",
+      err instanceof Error ? err.message : err,
+    );
+    res.status(401).json({ error: "Unauthorized" });
   }
 }
 
