@@ -313,8 +313,8 @@ compositions of the same verified primitives.
 
 Live app: web on Vercel, api+db on Railway. Ship each feature via git push
 (auto-deploys). Order:
-1. [in progress] Full template editor in Admin — edit frequency/weekday/dayOfMonth/
-   checklist/readings/category/asset/active + CREATE new templates. (User blocker.)
+1. [x] Full template editor in Admin — edit frequency/weekday/dayOfMonth/
+   checklist/readings/category/asset/active + CREATE new templates. Live+verified.
 2. [ ] Overdue & upcoming on Today + clickable Dashboard overdue count.
 3. [ ] Task assignment UI (assigneeId already in model).
 4. [ ] Standalone "+ New Work Order" (not tied to a task).

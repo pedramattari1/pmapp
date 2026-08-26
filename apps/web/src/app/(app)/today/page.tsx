@@ -1,9 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
-import { CheckCircle2, ChevronRight } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
-import { getTasksToday, type TaskSummary } from "@/lib/api";
+import { getTasksToday, type OverdueTask, type TaskSummary } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +65,38 @@ export default async function TodayPage() {
         subtitle={`${formatted} · ${total} task${total === 1 ? "" : "s"} due`}
       />
 
-      {total === 0 ? (
+      {today.overdue.length > 0 && (
+        <section id="overdue" className="mb-6">
+          <div className="mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-red-700">
+              Overdue ({today.overdue.length})
+            </h2>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-red-200 bg-red-50/40 shadow-sm">
+            <div className="divide-y divide-red-100">
+              {today.overdue.map((t: OverdueTask) => (
+                <Link
+                  key={t.id}
+                  href={`/tasks/${t.id}`}
+                  className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-red-50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{t.title}</div>
+                    <div className="truncate text-xs text-red-700/80">
+                      {t.category} · was due {t.dueDate}
+                    </div>
+                  </div>
+                  <StatusBadge status={t.status} />
+                  <ChevronRight className="h-4 w-4 text-red-400 group-hover:text-red-600" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {total === 0 && today.overdue.length === 0 ? (
         <div className="card-surface flex flex-col items-center gap-3 px-6 py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
             <CheckCircle2 className="h-6 w-6" />

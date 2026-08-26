@@ -65,6 +65,22 @@ tasksRouter.get("/today", requireAuth, async (req, res) => {
     orderBy: { template: { title: "asc" } },
   });
 
+  // Overdue: earlier days, not completed, mine or unassigned.
+  const overdueRows = await prisma.task.findMany({
+    where: {
+      dueDate: { lt: dueDate },
+      status: { not: "COMPLETED" },
+      OR: [{ assigneeId: me.id }, { assigneeId: null }],
+    },
+    select: {
+      id: true,
+      status: true,
+      dueDate: true,
+      template: { select: { title: true, category: true, frequency: true } },
+    },
+    orderBy: { dueDate: "asc" },
+  });
+
   const summary = (t: (typeof tasks)[number]) => ({
     id: t.id,
     status: t.status,
@@ -75,6 +91,14 @@ tasksRouter.get("/today", requireAuth, async (req, res) => {
 
   res.json({
     date: dueDate.toISOString().slice(0, 10),
+    overdue: overdueRows.map((t) => ({
+      id: t.id,
+      status: t.status,
+      title: t.template.title,
+      category: t.template.category,
+      frequency: t.template.frequency,
+      dueDate: t.dueDate.toISOString().slice(0, 10),
+    })),
     daily: tasks.filter((t) => t.template.frequency === "DAILY").map(summary),
     weekly: tasks.filter((t) => t.template.frequency === "WEEKLY").map(summary),
     monthly: tasks.filter((t) => t.template.frequency === "MONTHLY").map(summary),
@@ -129,10 +153,19 @@ tasksRouter.post("/:id", requireAuth, async (req, res) => {
 
   const body = req.body as {
     status?: unknown;
+    assigneeId?: unknown;
     ticks?: TickInput[];
     readings?: ReadingInput[];
     attachments?: AttachmentInput[];
   };
+
+  // assigneeId: string = assign, null/"" = unassign, absent = unchanged.
+  let assigneeUpdate: { id: string | null } | undefined;
+  if (body.assigneeId !== undefined) {
+    assigneeUpdate = {
+      id: typeof body.assigneeId === "string" && body.assigneeId ? body.assigneeId : null,
+    };
+  }
 
   let newStatus: TaskStatus | undefined;
   if (body.status !== undefined) {
@@ -188,8 +221,20 @@ tasksRouter.post("/:id", requireAuth, async (req, res) => {
       }
     }
 
-    if (newStatus !== undefined) {
-      await tx.task.update({ where: { id }, data: { status: newStatus } });
+    if (newStatus !== undefined || assigneeUpdate !== undefined) {
+      await tx.task.update({
+        where: { id },
+        data: {
+          ...(newStatus !== undefined ? { status: newStatus } : {}),
+          ...(assigneeUpdate !== undefined
+            ? {
+                assignee: assigneeUpdate.id
+                  ? { connect: { id: assigneeUpdate.id } }
+                  : { disconnect: true },
+              }
+            : {}),
+        },
+      });
     }
 
     await tx.auditLog.create({

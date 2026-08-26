@@ -68,6 +68,7 @@ export function TaskDetailForm({
   });
 
   const [status, setStatus] = useState<TaskStatus>(task.status);
+  const [assigneeId, setAssigneeId] = useState<string>(task.assignee?.id ?? "");
 
   const [woTitle, setWoTitle] = useState(`${task.template.title} — deficiency`);
   const [woDesc, setWoDesc] = useState("");
@@ -120,6 +121,7 @@ export function TaskDetailForm({
     setQueued(false);
     const input: SaveTaskInput = {
       status,
+      assigneeId: assigneeId || null,
       ticks: task.template.checklistItems.map((label) => ({
         label,
         done: ticks[label]?.done ?? false,
@@ -247,24 +249,43 @@ export function TaskDetailForm({
           </section>
         )}
 
-        {/* Status */}
-        <section className="card-surface p-5">
-          <h2 className="section-label mb-3">Status</h2>
-          <select
-            className={selectClass}
-            value={status}
-            onChange={(e) => setStatus(e.target.value as TaskStatus)}
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+        {/* Status + assignment */}
+        <section className="card-surface grid gap-4 p-5 sm:grid-cols-2">
+          <div>
+            <h2 className="section-label mb-3">Status</h2>
+            <select
+              className={selectClass}
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <h2 className="section-label mb-3">Assigned to</h2>
+            <select
+              className={selectClass}
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+            >
+              <option value="">Unassigned</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.role})
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
 
-          {/* Deficiency → create work order */}
-          {DEFICIENCY_STATUSES.includes(status) && (
-            <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+        {/* Deficiency → create a linked work order (only when flagged) */}
+        {DEFICIENCY_STATUSES.includes(status) && (
+          <section className="card-surface p-5">
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-800">
                 Flagged — create a work order
               </h3>
@@ -318,8 +339,8 @@ export function TaskDetailForm({
                 </div>
               )}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Attachments */}
         <section className="card-surface p-5">

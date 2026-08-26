@@ -57,8 +57,13 @@ export interface TaskSummary {
   frequency: Frequency;
 }
 
+export interface OverdueTask extends TaskSummary {
+  dueDate: string;
+}
+
 export interface TodayResponse {
   date: string;
+  overdue: OverdueTask[];
   daily: TaskSummary[];
   weekly: TaskSummary[];
   monthly: TaskSummary[];
@@ -88,6 +93,7 @@ export interface TaskDetail {
 
 export interface SaveTaskInput {
   status?: TaskStatus;
+  assigneeId?: string | null;
   ticks: { label: string; done: boolean; note?: string }[];
   readings: { type: string; value: string; unit: string; assetId?: string }[];
   attachments: { url: string; caption?: string }[];

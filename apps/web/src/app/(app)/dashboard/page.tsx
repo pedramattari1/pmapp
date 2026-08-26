@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { AlertTriangle, CheckCircle2, ClipboardList, Wrench } from "lucide-react";
+import Link from "next/link";
 import { ExportButtons } from "@/components/export-buttons";
 import { PageHeader } from "@/components/page-header";
 import { WorkOrderStatusBadge } from "@/components/status-badge";
@@ -13,12 +14,14 @@ function StatCard({
   hint,
   icon: Icon,
   tone,
+  href,
 }: {
   label: string;
   value: string;
   hint?: string;
   icon: React.ComponentType<{ className?: string }>;
   tone: "primary" | "success" | "danger" | "muted";
+  href?: string;
 }) {
   const tones = {
     primary: "bg-primary/10 text-primary",
@@ -26,8 +29,8 @@ function StatCard({
     danger: "bg-red-50 text-red-600",
     muted: "bg-muted text-muted-foreground",
   };
-  return (
-    <div className="card-surface p-5">
+  const inner = (
+    <>
       <div className="flex items-center justify-between">
         <span className="section-label">{label}</span>
         <span className={`rounded-lg p-1.5 ${tones[tone]}`}>
@@ -36,8 +39,16 @@ function StatCard({
       </div>
       <div className="mt-3 text-3xl font-semibold tracking-tight">{value}</div>
       {hint && <div className="mt-1 text-sm text-muted-foreground">{hint}</div>}
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link href={href} className="card-surface block p-5 transition-colors hover:bg-accent">
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="card-surface p-5">{inner}</div>;
 }
 
 export default async function DashboardPage() {
@@ -83,9 +94,10 @@ export default async function DashboardPage() {
         <StatCard
           label="Overdue tasks"
           value={String(data.overdueCount)}
-          hint={data.overdueCount === 0 ? "All caught up" : "Need attention"}
+          hint={data.overdueCount === 0 ? "All caught up" : "View on Today →"}
           icon={AlertTriangle}
           tone={data.overdueCount === 0 ? "muted" : "danger"}
+          href={data.overdueCount > 0 ? "/today#overdue" : undefined}
         />
       </div>
 

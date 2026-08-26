@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { ChevronRight, Wrench } from "lucide-react";
 import Link from "next/link";
+import { NewWorkOrder } from "@/components/new-work-order";
 import { PageHeader } from "@/components/page-header";
 import { WorkOrderStatusBadge, WO_STATUS_OPTIONS } from "@/components/status-badge";
-import { listWorkOrders, type WorkOrderStatus } from "@/lib/api";
+import { listUsers, listWorkOrders, type WorkOrderStatus } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +23,18 @@ export default async function WorkOrdersPage({
 
   const { getToken } = await auth();
   const token = await getToken();
-  const items = await listWorkOrders(token, active);
+  const [items, users] = await Promise.all([
+    listWorkOrders(token, active),
+    listUsers(token),
+  ]);
 
   return (
     <>
-      <PageHeader title="Work Orders" subtitle={`${items.length} total`} />
+      <PageHeader
+        title="Work Orders"
+        subtitle={`${items.length} total`}
+        actions={<NewWorkOrder users={users} />}
+      />
 
       <div className="mb-5 flex flex-wrap gap-2">
         {FILTERS.map((f) => {
